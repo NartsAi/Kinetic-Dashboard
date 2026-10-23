@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.1 - 2026-10-23
+
+- Add the approved Kinetic house/dashboard icon and logo for the Home Assistant add-on store.
+
 ## 1.7.0 - 2026-10-23
 
 - Add a feature configuration manager with visible pages, vehicle sensor pickers, common entity mappings and missing/unavailable entity diagnostics.

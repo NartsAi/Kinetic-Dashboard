@@ -1,5 +1,5 @@
 name: Kinetic Dashboard
-version: "1.7.0"
+version: "1.7.1"
 slug: kinetic_dashboard
 description: Kinetic dashboard with Ingress, automatic discovery and persistent setup
 url: https://github.com/NartsAi/Kinetic-Dashboard
