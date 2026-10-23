@@ -1,7 +1,9 @@
 import { discover } from './discovery.mjs';
+import { renderManager } from './config-manager.mjs';
 const $ = id => document.getElementById(id);
 let token = '', discovery, revision = null;
 const status = text => { $('status').textContent = text; };
+function manage(config) { renderManager(config, discovery, next => { $('config').value = JSON.stringify(next, null, 2); status('Feature changes applied to editor. Review, then save.'); }); }
 async function getToken() {
   try {
     const auth = parent !== window && parent.document.querySelector('home-assistant')?.hass?.auth;
@@ -49,6 +51,7 @@ async function connect() {
     $('name').value = saved.config.brand?.name || 'My home';
     $('review').hidden = false;
     discovery = await api('discovery');
+    manage(saved.config);
     $('counts').textContent = `${discovery.areas.length} areas · ${discovery.devices.length} devices · ${discovery.entities.length} entities. Unassigned cameras, climate, media and calendars are also included.`;
     $('area-list').replaceChildren();
     for (const area of discovery.areas) {
@@ -67,6 +70,7 @@ $('generate').onclick = () => {
     const selected = [...$('area-list').querySelectorAll('input:checked')].map(el => el.value);
     const config = { ...existing, ...discover(discovery, selected), brand: { ...existing.brand, name: $('name').value, intro: false } };
     $('config').value = JSON.stringify(config, null, 2); $('review').hidden = false;
+    manage(config);
     status('Generated. Review your mappings, then save.'); $('review').scrollIntoView({ behavior: 'smooth' });
   } catch (e) { status(e.message); }
 };

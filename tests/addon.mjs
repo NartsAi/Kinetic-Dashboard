@@ -5,6 +5,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { createServer, validateConfig, haRequest } from '../addon/server.mjs';
 import { discover } from '../addon/discovery.mjs';
+import { diagnostics } from '../addon/config-manager.mjs';
+
+test('feature diagnostics explain missing vehicle, hidden pages and broken entity mappings', () => {
+  const inventory = { states: [{ entity_id: 'sensor.fuel', state: 'unavailable' }] };
+  assert.ok(diagnostics({}, inventory).some(s => s.includes('no configuration')));
+  const issues = diagnostics({ pages: ['home'], vehicle: { entities: { fuel_level: 'sensor.fuel', odometer: 'sensor.deleted' } } }, inventory);
+  assert.ok(issues.some(s => s.includes('hidden')));
+  assert.ok(issues.some(s => s.includes('sensor.fuel: unavailable')));
+  assert.ok(issues.some(s => s.includes('sensor.deleted: not found')));
+});
 
 test('discovery respects overrides, disabled entities and device inheritance', () => {
   const inventory = { areas: [{ area_id: 'a', name: 'Kitchen' }, { area_id: 'b', name: 'Bedroom' }],

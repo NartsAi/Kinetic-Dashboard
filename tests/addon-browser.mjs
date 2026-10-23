@@ -7,7 +7,7 @@ import { createServer } from '../addon/server.mjs';
 const dir = await mkdtemp(path.join(os.tmpdir(), 'kinetic-browser-'));
 const prefix = '/api/hassio_ingress/browser-test';
 const inventory = { areas: [{ area_id: 'living', name: 'Living room' }], devices: [{ id: 'lamp', area_id: 'living' }],
-  entities: [{ entity_id: 'light.living', device_id: 'lamp' }], states: [{ entity_id: 'light.living', state: 'off', attributes: { friendly_name: 'Living lamp' } }] };
+  entities: [{ entity_id: 'light.living', device_id: 'lamp' }], states: [{ entity_id: 'light.living', state: 'off', attributes: { friendly_name: 'Living lamp' } }, { entity_id: 'sensor.my_car_fuel', state: '67', attributes: { friendly_name: 'Car fuel' } }] };
 const result = { 'auth/current_user': { is_admin: true }, 'config/area_registry/list': inventory.areas, 'config/device_registry/list': inventory.devices, 'config/entity_registry/list': inventory.entities, get_states: inventory.states };
 const server = createServer({ dataDir: dir, staticDir: path.resolve('addon'), trustedPeer: '127.0.0.1', requestHA: async (_, commands) => commands.map(c => result[c.type]) });
 // Simulate Supervisor stripping the prefix and adding the trusted header.
@@ -36,11 +36,21 @@ try {
     const generated = JSON.parse(await page.locator('#config').inputValue());
     assert.deepEqual(generated.house[0].lights, ['light.living']);
     assert.equal(generated.brand.name, 'Our home');
+    await page.locator('#vehicle-enabled').check();
+    await page.locator('#vehicle-name').fill('Family car');
+    await page.locator('#vehicle-fuel_level').fill('sensor.my_car_fuel');
+    await page.locator('#apply-features').click();
+    assert.equal(JSON.parse(await page.locator('#config').inputValue()).vehicle.entities.fuel_level, 'sensor.my_car_fuel');
     await page.locator('#save').click();
     await page.waitForURL('**/dash.html');
     await page.waitForTimeout(1200);
     assert.ok(!errors.length, errors.join('\n'));
     assert.equal(await page.locator('#st').textContent(), 'LIVE');
+    await page.evaluate(() => { location.hash = '#vehicle'; });
+    await page.locator('#vehicle .vring b').waitFor();
+    assert.match(await page.locator('#vehicle .vring b').textContent(), /67/);
+    assert.equal(await page.evaluate(() => REL.vehicle.test('sensor.my_car_fuel')), true);
+    assert.match(await page.evaluate(() => { const v = CONFIG.vehicle; CONFIG.vehicle = null; drawVehicle(); const text = document.querySelector('#vehicle').textContent; CONFIG.vehicle = v; drawVehicle(); return text; }), /Set up your vehicle/);
     await page.locator('#navset').evaluate(el => el.click());
     await page.waitForURL('**/setup.html');
     await page.locator('#areas').waitFor({ state: 'visible' });

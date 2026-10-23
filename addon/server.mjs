@@ -100,6 +100,7 @@ export function createServer({ dataDir = '/data', staticDir = path.dirname(fileU
         return reply(404, { error: 'Unknown API route' });
       }
       const files = { '/dash.html': ['dash.html', 'text/html'], '/brand-logo.js': ['brand-logo.js', 'text/javascript'], '/setup.html': ['setup.html', 'text/html'], '/setup.js': ['setup.js', 'text/javascript'], '/discovery.mjs': ['discovery.mjs', 'text/javascript'] };
+      files['/config-manager.mjs'] = ['config-manager.mjs', 'text/javascript'];
       const file = files[route];
       if (req.method !== 'GET' || !file) return reply(404, { error: 'Not found' });
       if (route === '/dash.html' && !(await load())) { res.writeHead(302, { Location: base + '/setup.html' }); return res.end(); }

@@ -39,3 +39,9 @@ Refresh discovery after changing registry assignments. Generation replaces disco
 From the repository root: `npm install`, `npx playwright install chromium`, `npm run package:addon`, `npm test`, `npm run test:addon`. Build the container with `docker build -t kinetic-addon addon`. Committed assets in `addon/` allow the Supervisor to build using that directory alone; CI checks they match the generated engine.
 
 Report issues at https://github.com/NartsAi/Kinetic-Dashboard/issues. The preview still requires a real Home Assistant OS install and camera/media check before a stable release. MIT license: ../LICENSE.
+
+# Managing missing features (1.7.0)
+
+Open dashboard Settings as an administrator and look for **Manage features and missing entities**. Diagnostics explain absent vehicle configuration, hidden Vehicle pages and missing/unavailable entity references. Under **Visible dashboard pages**, choose navigation items. Under **Vehicle configuration**, enable Vehicle, enter its name and select exact Home Assistant sensor IDs from the searchable suggestions. A legacy prefix remains supported, but individual mappings take precedence. The original renderer expects percentage fuel, kilometre range/odometer, L/100km consumption, numeric status codes, and binary on/off warnings; adapt other units or encodings using HA template sensors. This does not install a vehicle integration or invent telemetry.
+
+Use **Common missing features** to map weather, alarm and indoor/outdoor temperature sensors. Click **Apply feature changes to editor**, review the resulting JSON, then **Save and open dashboard**. Unrelated advanced configuration is retained. For other feature mappings, the JSON editor remains available. Refresh discovery after changing integrations; this reloads the last saved configuration, so save or copy unsaved work first.
