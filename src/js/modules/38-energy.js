@@ -224,6 +224,7 @@ $("#navset").href = CONFIG.url + setPath();
 $("#navset2").href = CONFIG.url + setPath();
 $("#navset").onclick = $("#navset2").onclick = e => {
   e.preventDefault();
+  if (setPath().startsWith('/api/hassio_ingress/')) { location.href = CONFIG.url + setPath(); return; }
   try { if (window.top !== window.parent || window.parent === window) throw 0; const w = window.parent; w.history.pushState(null, "", setPath()); w.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } })); }
   catch (_) { try { (window.top || window).location.href = CONFIG.url + setPath(); } catch (__) { location.href = CONFIG.url + setPath(); } }
 };

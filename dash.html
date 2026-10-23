@@ -1642,7 +1642,7 @@ html[data-mode=light] .ldt.run{background:linear-gradient(160deg,rgba(60,150,255
 // (notification tap such as #view/driveway, #security ...), not the return from the login, and the device has not asked for reduced motion.
 window.brandLogo = function () { var L = window.DASH_LOGO, B = (window.DASH_CONFIG || {}).brand; return L && L.svg ? { svg: L.svg, lockup: !!L.lockup } : B && B.mark ? { svg: B.mark, lockup: false } : null; };   // brand-logo.js wins over brand.mark in config.js
 window.brandMark = function (s) { var g = window.brandLogo(); if (!g) return ""; return g.svg.replace(/\bid="([\w-]+)"/g, 'id="$1' + s + '"').replace(/url\(#([\w-]+)\)/g, 'url(#$1' + s + ')'); };
-window.DASH_VER = "1.5.9";   // the one place to change the version
+window.DASH_VER = "1.7.1";   // the one place to change the version
 (function () { try {
   var B = (window.DASH_CONFIG || {}).brand, el = document.getElementById("bootld"), r = document.documentElement, lp = "on";
   try { lp = localStorage.getItem("dashLogo") || "on"; } catch (e) {}   // Theme page -> "Start-up logo": on | load (no intro) | off (plain spinner, as before)
@@ -1835,7 +1835,7 @@ Object.assign(MDI, {"plus":"M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"});
 Object.assign(MDI, {"lyrics":"M4,5H14V7H4V5M4,9H14V11H4V9M4,13H10V15H4V13M18,3V12.6A3,3 0 1,0 20,15.4V6H22V3H18Z"});
 MDI["battery-low"] = "M9,2H15V4H16.5A1.5,1.5 0 0,1 18,5.5V20.5A1.5,1.5 0 0,1 16.5,22H7.5A1.5,1.5 0 0,1 6,20.5V5.5A1.5,1.5 0 0,1 7.5,4H9V2M8,6V20H16V6H8M9,14H15V18H9V14Z";
 const isMobile = () => window.matchMedia("(max-width:760px)").matches;
-const MAIN = CONFIG.rooms.filter(r => r.main)[0].id, W = CONFIG.weather;
+const MAIN = (CONFIG.rooms.find(r => r.main) || CONFIG.rooms[0] || {}).id || '', W = CONFIG.weather;
 const MODE = { heat_cool: "AUTO", fan_only: "FAN", off: "OFF", heat: "HEAT", cool: "COOL", dry: "DRY", auto: "AUTO" };
 const cls = { heat: "heat", cool: "cool", dry: "cool", heat_cool: "auto", auto: "auto", fan_only: "fan" };
 const WI = { sunny: "weather-sunny", "clear-night": "weather-night", cloudy: "weather-cloudy", partlycloudy: "weather-partly-cloudy", rainy: "weather-rainy", pouring: "weather-pouring", lightning: "weather-lightning", "lightning-rainy": "weather-lightning-rainy", snowy: "weather-snowy", "snowy-rainy": "weather-snowy-rainy", fog: "weather-fog", windy: "weather-windy", "windy-variant": "weather-windy", hail: "weather-hail", exceptional: "weather-sunny-alert" };
@@ -3279,12 +3279,13 @@ let irrI = 0, irrSc = 0, irrT = 0;
 
 // ---------- vehicle (Mercedes me) ----------
 function drawVehicle() {
-  const V = CONFIG.vehicle, pg = $("#vehicle"); if (!V || !pg) return;
-  const E = k => states[(/^(binary_sensor|device_tracker)/.test(k) ? "" : "sensor.") + V.prefix + "_" + k] || states["binary_sensor." + V.prefix + "_" + k];
+  const V = CONFIG.vehicle, pg = $("#vehicle"); if (!pg) return;
+  if (!V) { pg.innerHTML = '<div class="pn"><h2>Set up your vehicle</h2><p>No vehicle entities have been configured. Open Settings to enable Vehicle and map your Home Assistant sensors.</p><a href="' + esc(CONFIG.url + (CONFIG.settingsPath || '/config/dashboard')) + '">Open settings</a></div>'; return; }
+  const E = k => V.entities && V.entities[k] ? states[V.entities[k]] : states[(/^(binary_sensor|device_tracker)/.test(k) ? "" : "sensor.") + V.prefix + "_" + k] || states["binary_sensor." + V.prefix + "_" + k];
   const N = k => { const e = E(k); return e && e.state !== "unavailable" && e.state !== "unknown" && !isNaN(+e.state) ? +e.state : null; };
-  const B = k => { const e = states["binary_sensor." + V.prefix + "_" + k]; return e ? e.state === "on" : null; };
+  const B = k => { const e = V.entities && V.entities[k] ? states[V.entities[k]] : states["binary_sensor." + V.prefix + "_" + k]; return e && !['unknown', 'unavailable'].includes(e.state) ? e.state === "on" : null; };
   const fx = (v, d) => v == null ? "--" : (+v).toLocaleString(undefined, { maximumFractionDigits: d == null ? 0 : d });
-  const T = (m, v) => v == null ? "--" : (m[v] != null ? m[v] : "Code " + v);
+  const T = (m, v) => v == null ? "--" : (m && m[v] != null ? m[v] : "Code " + v);
   const fuel = N("fuel_level"), range = N("range_liquid"), odo = N("odometer"), lk = N("lock"), ig = N("ignition_state");
   const fcol = fuel == null ? "var(--mut)" : fuel <= V.lowFuelPct ? "var(--heat)" : fuel <= 30 ? "#ffaa00" : "var(--mint)";
   const C = 2 * Math.PI * 54, off = fuel == null ? C : C * (1 - Math.min(100, fuel) / 100);
@@ -3316,7 +3317,7 @@ function drawVehicle() {
   let health = W.filter(w => B(w[0]) != null).map(w => hr(w[1], w[2], !B(w[0]), B(w[0]) ? "Warning" : "OK")).join("");
   if (bs != null) health += hr("v-batt", "Starter battery", bs === 0, T(V.batteryText, bs));
   const bad = W.filter(w => B(w[0])).length + (bs != null && bs !== 0 ? 1 : 0);
-  const healthC = '<div class="pn"><div class="lbl">' + mdi("v-engine") + ' Vehicle health' + (bad ? " · " + bad + " to check" : " · all good") + '</div>' + health + '</div>';
+  const healthC = '<div class="pn"><div class="lbl">' + mdi("v-engine") + ' Vehicle health' + (!health ? ' — no health data configured' : bad ? " · " + bad + " to check" : " · all good") + '</div>' + health + '</div>';
   pg.innerHTML = '<div class="vgrid">' + hero + trips + eco + openings + healthC + '</div>';
 }
 function irrRain() {   // next 12 hours only, as hour columns (the Weather page chart covers 24 h)
@@ -3520,7 +3521,7 @@ const REL = {
   irrigation: rxj(/(water_tap|sprinkler|soil|water_restriction|water_level)/, (CONFIG.relevance || {}).irrigation),
   scenes: rxj(/(dynamic_scene|gradient_scene)/, (CONFIG.relevance || {}).scenes),
   media: /^media_player\./,
-  vehicle: new RegExp(((CONFIG.vehicle || {}).prefix || "\\u0000nomatch")),
+  vehicle: { test: id => { const v = CONFIG.vehicle || {}; return Object.values(v.entities || {}).includes(id) || !!(v.prefix && id.includes(v.prefix)); } },
   hazards: /^(geo_location\.|sensor\.volcano_|zone\.home$)/
 };
 let pq = 0;
@@ -4847,6 +4848,7 @@ $("#navset").href = CONFIG.url + setPath();
 $("#navset2").href = CONFIG.url + setPath();
 $("#navset").onclick = $("#navset2").onclick = e => {
   e.preventDefault();
+  if (setPath().startsWith('/api/hassio_ingress/')) { location.href = CONFIG.url + setPath(); return; }
   try { if (window.top !== window.parent || window.parent === window) throw 0; const w = window.parent; w.history.pushState(null, "", setPath()); w.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } })); }
   catch (_) { try { (window.top || window).location.href = CONFIG.url + setPath(); } catch (__) { location.href = CONFIG.url + setPath(); } }
 };

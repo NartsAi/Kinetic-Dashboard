@@ -4,7 +4,7 @@ const REL = {
   irrigation: rxj(/(water_tap|sprinkler|soil|water_restriction|water_level)/, (CONFIG.relevance || {}).irrigation),
   scenes: rxj(/(dynamic_scene|gradient_scene)/, (CONFIG.relevance || {}).scenes),
   media: /^media_player\./,
-  vehicle: new RegExp(((CONFIG.vehicle || {}).prefix || "\\u0000nomatch")),
+  vehicle: { test: id => { const v = CONFIG.vehicle || {}; return Object.values(v.entities || {}).includes(id) || !!(v.prefix && id.includes(v.prefix)); } },
   hazards: /^(geo_location\.|sensor\.volcano_|zone\.home$)/
 };
 let pq = 0;

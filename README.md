@@ -9,6 +9,13 @@
 > `config.example.js` contains invented sample data only. Copy it to `config.js` and replace the entity ids with your own.
 
 ## Install
+
+### Home Assistant add-on (preview)
+
+For Home Assistant OS / Supervisor, add `https://github.com/NartsAi/Kinetic-Dashboard#feature/ha-addon-ingress-20261023` to the add-on store repositories, install **Kinetic Dashboard**, start it and open its Web UI. The first-run wizard discovers your areas/devices/entities and saves your configuration persistently. Setup requires an HA administrator; dashboard controls keep each user's HA permissions. See [add-on documentation](addon/DOCS.md) for migration and discovery rules.
+
+### Original standalone installation
+
 1. Put `dash.html`, `config.js` (copied from `config.example.js`) and `brand-logo.js` in Home Assistant's `www/` folder (served as `/local/`).
 2. Open `https://<your-ha>/local/dash.html` and sign in with your normal Home Assistant login. Leave `token` empty in `config.js`; never paste a long-lived token, because `www/` files can be read without a login.
 3. Add [script](https://github.com/ElementZoom/Kinetic-Dashboard/tree/main/scripts) folder to your root HA folder.

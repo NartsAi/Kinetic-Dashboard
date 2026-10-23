@@ -1,11 +1,12 @@
 // ---------- vehicle (Mercedes me) ----------
 function drawVehicle() {
-  const V = CONFIG.vehicle, pg = $("#vehicle"); if (!V || !pg) return;
-  const E = k => states[(/^(binary_sensor|device_tracker)/.test(k) ? "" : "sensor.") + V.prefix + "_" + k] || states["binary_sensor." + V.prefix + "_" + k];
+  const V = CONFIG.vehicle, pg = $("#vehicle"); if (!pg) return;
+  if (!V) { pg.innerHTML = '<div class="pn"><h2>Set up your vehicle</h2><p>No vehicle entities have been configured. Open Settings to enable Vehicle and map your Home Assistant sensors.</p><a href="' + esc(CONFIG.url + (CONFIG.settingsPath || '/config/dashboard')) + '">Open settings</a></div>'; return; }
+  const E = k => V.entities && V.entities[k] ? states[V.entities[k]] : states[(/^(binary_sensor|device_tracker)/.test(k) ? "" : "sensor.") + V.prefix + "_" + k] || states["binary_sensor." + V.prefix + "_" + k];
   const N = k => { const e = E(k); return e && e.state !== "unavailable" && e.state !== "unknown" && !isNaN(+e.state) ? +e.state : null; };
-  const B = k => { const e = states["binary_sensor." + V.prefix + "_" + k]; return e ? e.state === "on" : null; };
+  const B = k => { const e = V.entities && V.entities[k] ? states[V.entities[k]] : states["binary_sensor." + V.prefix + "_" + k]; return e && !['unknown', 'unavailable'].includes(e.state) ? e.state === "on" : null; };
   const fx = (v, d) => v == null ? "--" : (+v).toLocaleString(undefined, { maximumFractionDigits: d == null ? 0 : d });
-  const T = (m, v) => v == null ? "--" : (m[v] != null ? m[v] : "Code " + v);
+  const T = (m, v) => v == null ? "--" : (m && m[v] != null ? m[v] : "Code " + v);
   const fuel = N("fuel_level"), range = N("range_liquid"), odo = N("odometer"), lk = N("lock"), ig = N("ignition_state");
   const fcol = fuel == null ? "var(--mut)" : fuel <= V.lowFuelPct ? "var(--heat)" : fuel <= 30 ? "#ffaa00" : "var(--mint)";
   const C = 2 * Math.PI * 54, off = fuel == null ? C : C * (1 - Math.min(100, fuel) / 100);
@@ -37,7 +38,7 @@ function drawVehicle() {
   let health = W.filter(w => B(w[0]) != null).map(w => hr(w[1], w[2], !B(w[0]), B(w[0]) ? "Warning" : "OK")).join("");
   if (bs != null) health += hr("v-batt", "Starter battery", bs === 0, T(V.batteryText, bs));
   const bad = W.filter(w => B(w[0])).length + (bs != null && bs !== 0 ? 1 : 0);
-  const healthC = '<div class="pn"><div class="lbl">' + mdi("v-engine") + ' Vehicle health' + (bad ? " · " + bad + " to check" : " · all good") + '</div>' + health + '</div>';
+  const healthC = '<div class="pn"><div class="lbl">' + mdi("v-engine") + ' Vehicle health' + (!health ? ' — no health data configured' : bad ? " · " + bad + " to check" : " · all good") + '</div>' + health + '</div>';
   pg.innerHTML = '<div class="vgrid">' + hero + trips + eco + openings + healthC + '</div>';
 }
 function irrRain() {   // next 12 hours only, as hour columns (the Weather page chart covers 24 h)
