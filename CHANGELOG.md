@@ -4,6 +4,11 @@ All notable changes to Kinetic, newest first. The version is the number in the `
 
 Versions are `MAJOR.MINOR.PATCH`. Bug fixes raise the patch number (1.0.0 to 1.0.1), new features raise the minor number (1.0.1 to 1.1.0), and big changes raise the major number (2.0.0). When a release is published, its notes are taken from the matching section below.
 
+## 1.6.0 - 2026-10-23
+
+- Add an installable Home Assistant add-on preview with authenticated Ingress, admin setup, registry discovery and persistent configuration.
+- Preserve the standalone dashboard; fix startup for homes without climate entities and route add-on Settings within Ingress.
+
 ## 1.5.9 - 2026-10-21
 
 ### Fixes

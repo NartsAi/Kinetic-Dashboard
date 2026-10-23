@@ -1,0 +1,34 @@
+name: Add-on validation
+on:
+  push:
+    branches: [main, 'feature/ha-addon-*']
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify generated engine and add-on assets
+        run: |
+          node build.mjs --check
+          cmp dash.html addon/dash.html
+          cmp brand-logo.js addon/brand-logo.js
+      - name: Backend tests
+        run: node --test tests/addon.mjs
+      - name: Install browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: All dashboard regressions and setup wizard
+        run: |
+          npm test
+          node tests/addon-browser.mjs
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build installable add-on container
+        run: docker build -t kinetic-addon:test addon
