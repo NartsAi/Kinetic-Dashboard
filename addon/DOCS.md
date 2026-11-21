@@ -1,6 +1,6 @@
 # Installation and setup
 
-1. In Home Assistant, open Settings → Add-ons → Add-on store → menu → Repositories.
+1. In Home Assistant, open Settings  Add-ons  Add-on store  menu  Repositories.
 2. For this review branch add `https://github.com/NartsAi/Kinetic-Dashboard#feature/ha-addon-ingress-20261023`.
 3. Refresh the store, install **Kinetic Dashboard**, start it, and choose **Open Web UI**. The first image build can take several minutes.
 4. Open setup as a Home Assistant administrator. The wizard normally reuses the parent frontend session. If that is unavailable, use **Sign in with Home Assistant**.
@@ -9,6 +9,10 @@
 Use the dashboard Settings link to revisit setup. Refresh discovery to find added devices, then generate and review the new mappings before saving. Discovery does not silently overwrite your custom configuration.
 
 # Authentication and permissions
+
+Starting with add-on 1.7.2, `panel_admin: false` makes the Kinetic sidebar panel available to signed-in non-admin users. Finish setup as an administrator first, enable **Show in sidebar** on the add-on, then reload the tablet's Home Assistant frontend. Configuration and registry discovery still require an administrator.
+
+For Fully Single App Kiosk running the Home Assistant Android app, keep Home Assistant as the selected kiosk application and open **Kinetic** from its sidebar while signed in as the tablet user. Fully Single App Kiosk controls which Android app is open; it does not choose the page within Home Assistant. For Fully Kiosk Browser instead, use the stable sidebar-panel URL copied from a normal browser after clicking Kinetic as the Start URL. Do not bookmark `/api/hassio_ingress/<token>/` session URLs or the administrator's setup page.
 
 The server listens on internal port 8099 with no host port mapping. It accepts only the Supervisor Ingress proxy at `172.30.32.2`; forwarded headers cannot bypass that restriction. Home Assistant authenticates Ingress sessions. The configuration API additionally verifies each bearer token with HA's `auth/current_user` WebSocket command and requires an administrator. Discovery uses that same user's credentials to query area, device and entity registries and current states.
 
@@ -45,3 +49,4 @@ Report issues at https://github.com/NartsAi/Kinetic-Dashboard/issues. The previe
 Open dashboard Settings as an administrator and look for **Manage features and missing entities**. Diagnostics explain absent vehicle configuration, hidden Vehicle pages and missing/unavailable entity references. Under **Visible dashboard pages**, choose navigation items. Under **Vehicle configuration**, enable Vehicle, enter its name and select exact Home Assistant sensor IDs from the searchable suggestions. A legacy prefix remains supported, but individual mappings take precedence. The original renderer expects percentage fuel, kilometre range/odometer, L/100km consumption, numeric status codes, and binary on/off warnings; adapt other units or encodings using HA template sensors. This does not install a vehicle integration or invent telemetry.
 
 Use **Common missing features** to map weather, alarm and indoor/outdoor temperature sensors. Click **Apply feature changes to editor**, review the resulting JSON, then **Save and open dashboard**. Unrelated advanced configuration is retained. For other feature mappings, the JSON editor remains available. Refresh discovery after changing integrations; this reloads the last saved configuration, so save or copy unsaved work first.
+

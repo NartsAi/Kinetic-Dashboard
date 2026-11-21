@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.2 - 2026-11-21
+
+- Allow signed-in non-admin users to open the configured dashboard through the Ingress sidebar panel. Configuration and discovery APIs remain admin-only.
+
 ## 1.7.1 - 2026-10-23
 
 - Add the approved Kinetic house/dashboard icon and logo for the Home Assistant add-on store.
@@ -14,3 +18,4 @@
 
 - Initial Home Assistant add-on preview with Ingress, per-user authentication, admin-only setup, area/device/entity discovery and atomic persistent configuration.
 - Existing Kinetic dashboard engine and original standalone installation retained.
+
