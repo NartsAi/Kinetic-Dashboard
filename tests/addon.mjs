@@ -7,6 +7,24 @@ import { createServer, validateConfig, haRequest } from '../addon/server.mjs';
 import { discover } from '../addon/discovery.mjs';
 import { diagnostics } from '../addon/config-manager.mjs';
 import { publishDashboard } from '../addon/publish.mjs';
+import { entityReferences, updateEntityEnabled } from '../addon/entity-groups.mjs';
+import vm from 'node:vm';
+
+test('entity toggles retain mappings, add new climate by inherited area and filter runtime references', async () => {
+  const config = { rooms: [{ id: 'climate.living', name: 'Living', main: true }], house: [{ id: 'living', name: 'Living', climate: ['climate.living'] }], weather: 'weather.home', disabledEntities: [] };
+  const inventory = { states: [{ entity_id: 'climate.office', attributes: { friendly_name: 'Office' } }], entities: [{ entity_id: 'climate.office', device_id: 'dev' }], devices: [{ id: 'dev', area_id: 'office' }], areas: [{ area_id: 'office', name: 'Office' }] };
+  updateEntityEnabled(config, 'climate.living', false, inventory);
+  assert.equal(config.rooms[0].id, 'climate.living');
+  updateEntityEnabled(config, 'climate.office', true, inventory);
+  assert.equal(config.rooms.length, 2); assert.deepEqual(config.house.find(r => r.id === 'office').climate, ['climate.office']);
+  assert.ok(entityReferences(config).has('climate.office'));
+  const ctx = {}; vm.createContext(ctx); vm.runInContext(await readFile('src/js/core/00-entity-config.js', 'utf8'), ctx);
+  const filtered = ctx.kineticFilterDisabledEntities(config);
+  assert.deepEqual(Array.from(filtered.rooms, r => r.id), ['climate.office']);
+  assert.equal(filtered.house[0].climate.length, 0); assert.equal(config.house[0].climate.length, 1);
+  updateEntityEnabled(config, 'climate.living', true, inventory);
+  assert.equal(config.disabledEntities.length, 0); assert.equal(config.rooms.length, 2);
+});
 
 test('feature diagnostics explain missing vehicle, hidden pages and broken entity mappings', () => {
   const inventory = { states: [{ entity_id: 'sensor.fuel', state: 'unavailable' }] };
@@ -79,6 +97,10 @@ test('Ingress, admin authorization, routing, revisions and restart persistence',
     assert.equal((await request('/api/discovery')).status, 200);
     assert.equal((await request('/server.mjs')).status, 404);
     assert.equal((await request('/setup.html')).status, 200);
+    const image = await request('/ranger-xlt.png');
+    assert.equal(image.headers.get('content-type'), 'image/png');
+    assert.deepEqual(Buffer.from(await image.arrayBuffer()), await readFile('addon/ranger-xlt.png'));
+    assert.deepEqual(await readFile(path.join(homeAssistantDir, 'www/kinetic/ranger-xlt.png')), await readFile('addon/ranger-xlt.png'));
     await stop(); url = await start();
     assert.deepEqual((await (await request('/api/config')).json()).config, config);
     await stop(); url = await start({ trustedPeer: '172.30.32.2' });

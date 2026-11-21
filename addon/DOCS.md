@@ -76,6 +76,18 @@ Report issues at https://github.com/NartsAi/Kinetic-Dashboard/issues. The previe
 
 # Managing missing features (1.7.0)
 
+## Vehicle styles, paint and grouped entities (1.9.0)
+
+Under **Vehicle configuration**, choose the original estate, editable **Ford Ranger XLT double cab**, or generated **White Ranger XLT artwork**. The colour picker updates editable illustrations and shows a live preview. Photos and fixed white artwork retain their original colours; the picker is disabled for those choices. A custom image URL takes precedence. Ranger images are stylised double-cabs, not exact model-year depictions. Choosing a style does not change your sensor mappings.
+
+**Entities by type** contains collapsed Climate, Lights, Switches, Covers/blinds, Fans, Cameras, Media, Calendar, Weather, Alarm, Sensor, Binary sensor, Scene and Script groups. Open a group to see its enabled count, search box and bounded scrolling list. Toggle individual entities, click **Apply feature changes to editor**, then save. These are Kinetic visibility settings, not Home Assistant entity disable switches or security permissions. Entities disabled in HA are labelled and must be enabled there first.
+
+Disabled entity IDs are retained in `disabledEntities`; their original mappings remain saved, while the engine removes their runtime references and ignores their state updates. Re-enabling restores them. Enabling a new climate entity adds its Climate card; other new controls go into their HA area or an Other devices room. Weather and alarm use a single active entity slot. Camera Home/Security selections are separate from the global visibility toggle. Republish the tablet dashboard after saving.
+
+## Dashboard-wide JavaScript errors
+
+If the header shows **JS ERROR**, tap it to open the complete message, source line, stack and engine version. **Copy error details** produces a report to share for diagnosis. Errors are kept only in browser memory, with URL token query values redacted; reports are not uploaded automatically. The banner persists across page navigation and connection updates. Updating diagnostics does not fix an unknown underlying error: the full report is needed to identify its cause.
+
 ## Home camera layout and feed selection (1.8.1)
 
 Home's camera gallery has its own vertical scroll area sized to the dashboard's available viewport. On wide screens the adjacent climate/forecast column stays compact and also scrolls independently if needed. Portrait layouts retain page scrolling for rooms and weather, while the camera list stays bounded. A camera can still open fullscreen from its scroll area.

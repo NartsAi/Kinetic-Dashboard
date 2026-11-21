@@ -11,7 +11,7 @@ const homeAssistantDir = path.join(dir, 'homeassistant');
 await mkdir(homeAssistantDir);
 await publishDashboard({ homeAssistantDir, staticDir: path.resolve('addon'), config: {
   house: [], rooms: [], pages: ['home', 'vehicle', 'theme'],
-  vehicle: { name: 'Ford Ranger', lowFuelPct: 15, entities: { fuel_level: 'sensor.ranger_fuel' } }
+  vehicle: { name: 'Ford Ranger', appearance: 'ranger-xlt-artwork', lowFuelPct: 15, entities: { fuel_level: 'sensor.ranger_fuel' } }
 } });
 // Model the same-origin HA Webpage card: the parent exposes the signed-in tablet
 // user's HA session and the published HTML borrows it. No admin login in the iframe.
@@ -22,8 +22,8 @@ const server = http.createServer(async (req, res) => {
     return res.end('<home-assistant></home-assistant><script>document.querySelector("home-assistant").hass={auth:{accessToken:"tablet-user-token",expired:false},user:{id:"tablet",name:"Tablet",is_admin:false}};</script><iframe title="Kinetic" style="width:100%;height:90vh" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" src="/local/kinetic/dash.html"></iframe>');
   }
   const name = route.replace('/local/kinetic/', '');
-  if (route.startsWith('/local/kinetic/') && ['dash.html', 'config.js', 'brand-logo.js'].includes(name)) {
-    res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : 'text/html');
+  if (route.startsWith('/local/kinetic/') && ['dash.html', 'config.js', 'brand-logo.js', 'ranger-xlt.png'].includes(name)) {
+    res.setHeader('Content-Type', name.endsWith('.png') ? 'image/png' : name.endsWith('.js') ? 'text/javascript' : 'text/html');
     return res.end(await readFile(path.join(homeAssistantDir, 'www/kinetic', name)));
   }
   res.writeHead(404); res.end();
@@ -50,6 +50,7 @@ try {
   assert.equal(state.admin, false); assert.equal(state.token, '');
   await frame.locator('#vehicle .vring b').waitFor();
   assert.match(await frame.locator('#vehicle .vring b').textContent(), /72/);
+  assert.equal(await frame.locator('#vehicle .vcar img').evaluate(async img => { await img.decode(); return img.naturalWidth > 0; }), true);
   assert.deepEqual([...new Set(tokens)], ['tablet-user-token']);
   assert.deepEqual(errors, []);
   console.log('Tablet embed passed: published dash.html, non-admin parent session, live vehicle telemetry and no embedded credentials.');

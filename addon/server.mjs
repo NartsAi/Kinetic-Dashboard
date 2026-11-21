@@ -38,7 +38,7 @@ export function validateConfig(config) {
     }
   };
   walk(config);
-  for (const key of ['house', 'rooms', 'tiles', 'cameras', 'security', 'media', 'calendars', 'pages'])
+  for (const key of ['house', 'rooms', 'tiles', 'cameras', 'security', 'media', 'calendars', 'pages', 'disabledEntities'])
     if (key in config && !Array.isArray(config[key])) throw Object.assign(new Error(key + ' must be an array'), { status: 400 });
   return config;
 }
@@ -54,7 +54,7 @@ export function createServer({ dataDir = '/data', staticDir = path.dirname(fileU
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
-    const reply = (status, body, type = 'application/json') => { res.writeHead(status, { 'Content-Type': type }); res.end(typeof body === 'string' ? body : JSON.stringify(body)); };
+    const reply = (status, body, type = 'application/json') => { res.writeHead(status, { 'Content-Type': type }); res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body)); };
     try {
       // Check the socket, never X-Forwarded-For or a user-supplied identity header.
       if (req.socket.remoteAddress?.replace(/^::ffff:/, '') !== trustedPeer) return reply(403, { error: 'Use Home Assistant Ingress' });
@@ -113,10 +113,13 @@ export function createServer({ dataDir = '/data', staticDir = path.dirname(fileU
       }
       const files = { '/dash.html': ['dash.html', 'text/html'], '/brand-logo.js': ['brand-logo.js', 'text/javascript'], '/setup.html': ['setup.html', 'text/html'], '/setup.js': ['setup.js', 'text/javascript'], '/discovery.mjs': ['discovery.mjs', 'text/javascript'] };
       files['/config-manager.mjs'] = ['config-manager.mjs', 'text/javascript'];
+      files['/ranger-xlt.png'] = ['ranger-xlt.png', 'image/png'];
+      files['/vehicle-art.js'] = ['vehicle-art.js', 'text/javascript'];
+      files['/entity-groups.mjs'] = ['entity-groups.mjs', 'text/javascript'];
       const file = files[route];
       if (req.method !== 'GET' || !file) return reply(404, { error: 'Not found' });
       if (route === '/dash.html' && !(await load())) { res.writeHead(302, { Location: base + '/setup.html' }); return res.end(); }
-      return reply(200, await readFile(path.join(staticDir, file[0]), 'utf8'), file[1]);
+      return reply(200, await readFile(path.join(staticDir, file[0]), file[1] === 'image/png' ? undefined : 'utf8'), file[1]);
     } catch (e) { reply(e.status || 500, { error: e.status ? e.message : 'Unable to read or save configuration. Check add-on storage.' }); }
   });
 }

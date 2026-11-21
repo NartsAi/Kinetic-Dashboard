@@ -1661,7 +1661,7 @@ html[data-mode=light] .ldt.run{background:linear-gradient(160deg,rgba(60,150,255
 // (notification tap such as #view/driveway, #security ...), not the return from the login, and the device has not asked for reduced motion.
 window.brandLogo = function () { var L = window.DASH_LOGO, B = (window.DASH_CONFIG || {}).brand; return L && L.svg ? { svg: L.svg, lockup: !!L.lockup } : B && B.mark ? { svg: B.mark, lockup: false } : null; };   // brand-logo.js wins over brand.mark in config.js
 window.brandMark = function (s) { var g = window.brandLogo(); if (!g) return ""; return g.svg.replace(/\bid="([\w-]+)"/g, 'id="$1' + s + '"').replace(/url\(#([\w-]+)\)/g, 'url(#$1' + s + ')'); };
-window.DASH_VER = "1.8.1";   // the one place to change the version
+window.DASH_VER = "1.9.0";   // the one place to change the version
 (function () { try {
   var B = (window.DASH_CONFIG || {}).brand, el = document.getElementById("bootld"), r = document.documentElement, lp = "on";
   try { lp = localStorage.getItem("dashLogo") || "on"; } catch (e) {}   // Theme page -> "Start-up logo": on | load (no intro) | off (plain spinner, as before)
@@ -1678,12 +1678,76 @@ window.DASH_VER = "1.8.1";   // the one place to change the version
 } catch (e) {} })();
 </script>
 <script>
-window.onerror = function (m, u, l) { document.documentElement.classList.remove("boot"); var s = document.getElementById("st"); s.className = "bad"; s.textContent = "JS ERROR: " + m + " (line " + l + ")"; };
+// Error details are kept in memory only. Nothing is automatically uploaded.
+window.KINETIC_DIAGNOSTICS = (() => {
+  const errors = [];
+  const scrub = value => String(value || '').replace(/([?&](?:token|access_token|refresh_token|auth|key)=)[^&\s)]+/gi, '$1[redacted]');
+  const api = { errors, connection: '', render, record, open };
+  function render() {
+    const status = document.getElementById('st'); if (!status || !errors.length) return;
+    document.documentElement.classList.remove('boot');
+    status.classList.add('bad'); status.textContent = 'JS ERROR: ' + errors[errors.length - 1].message;
+    status.title = 'Tap for full error details'; status.setAttribute('role', 'button'); status.setAttribute('aria-label', 'View JavaScript error details'); status.tabIndex = 0; status.style.cursor = 'pointer';
+    status.onclick = open;
+    status.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); } };
+  }
+  function record(message, source, line, column, error) {
+    let file = ''; try { file = source ? new URL(source, location.href).pathname : ''; } catch (_) {}
+    errors.push({ time: new Date().toISOString(), message: scrub(message).slice(0, 1500), file, line: line || 0, column: column || 0, stack: scrub(error && error.stack).slice(0, 6000) });
+    if (errors.length > 5) errors.shift(); render();
+  }
+  function open() {
+    const prior = document.getElementById('kinetic-error-dialog'); if (prior) prior.remove();
+    const dialog = document.createElement('dialog'); dialog.id = 'kinetic-error-dialog';
+    dialog.style.cssText = 'margin:auto;padding:24px;max-width:680px;width:calc(100% - 24px);max-height:90dvh;overflow:auto;border:1px solid var(--line);border-radius:20px;background:var(--bg);color:var(--ink)';
+    const heading = document.createElement('h2'); heading.textContent = 'Dashboard error details'; heading.id = 'kinetic-error-title'; dialog.setAttribute('aria-labelledby', heading.id);
+    const note = document.createElement('p'); note.textContent = 'Copy these details when reporting the error. This records the error; it does not fix its cause.'; note.style.margin = '12px 0';
+    const text = document.createElement('textarea'); text.readOnly = true; text.setAttribute('aria-label', 'Error report'); text.style.cssText = 'width:100%;min-height:220px;max-height:50dvh;padding:12px;background:rgba(128,128,128,.12);color:inherit;border:1px solid var(--line);font:13px/1.5 monospace';
+    text.value = 'Kinetic ' + (window.DASH_VER || 'unknown') + '\nPage: ' + location.hash + '\nViewport: ' + innerWidth + 'x' + innerHeight + '\nConnection: ' + (api.connection || 'unknown') + '\n\n' + errors.map(e => e.time + '\n' + e.message + '\n' + e.file + ':' + e.line + ':' + e.column + '\n' + e.stack).join('\n\n');
+    const copy = document.createElement('button'); copy.textContent = 'Copy error details'; copy.style.cssText = 'padding:12px;margin:14px 10px 0 0;cursor:pointer'; copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(text.value); copy.textContent = 'Copied'; } catch (_) { text.focus(); text.select(); copy.textContent = 'Select text to copy'; }
+    };
+    const close = document.createElement('button'); close.textContent = 'Close'; close.style.cssText = 'padding:12px;cursor:pointer'; close.onclick = () => dialog.remove();
+    dialog.append(heading, note, text, copy, close); document.body.append(dialog); dialog.showModal();
+  }
+  addEventListener('unhandledrejection', event => { const error = event.reason; record('Unhandled promise: ' + (error && error.message || error), '', 0, 0, error); });
+  return api;
+})();
+function vehicleRangerSvg(color) {
+  const paint = /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#e7e9ed';
+  const wheel = x => '<g transform="translate(' + x + ' 155)"><circle r="33" fill="#101116"/><circle r="28" fill="#202229"/><circle r="21" fill="#aab0ba"/><circle r="16" fill="#3a3f48"/>' + [0, 60, 120, 180, 240, 300].map(a => '<path d="M-3-5-5-18H5L3-5Z" fill="#bfc5ce" transform="rotate(' + a + ')"/>').join('') + '<circle r="7" fill="#8b939e"/><circle r="3" fill="#323740"/></g>';
+  return '<svg class="ranger-art" viewBox="0 0 480 210" role="img" aria-label="Ford Ranger XLT double-cab illustration">' +
+    '<defs><linearGradient id="ranger-paint" x2="0" y2="1"><stop stop-color="' + paint + '"/><stop offset="1" stop-color="' + paint + '" stop-opacity=".86"/></linearGradient></defs>' +
+    '<ellipse cx="240" cy="190" rx="211" ry="9" fill="#000" opacity=".3"/>' +
+    '<path d="M26 94Q26 87 34 87H170L185 55Q191 43 208 43H286Q305 43 321 62L354 91 431 102Q448 105 451 123V151H426A40 40 0 0 0 346 151H150A40 40 0 0 0 70 151H26Z" fill="url(#ranger-paint)" stroke="#9299a4" stroke-width="1.4"/>' +
+    '<path d="M29 126H72M150 126H347M426 126H447" stroke="#000" opacity=".15" stroke-width="13"/>' +
+    '<path d="M196 54H252V89H183ZM266 54H285Q298 54 311 68L330 89H266Z" fill="#243441" stroke="#79828b" stroke-width="2"/>' +
+    '<path d="M201 58H247M270 58H285L318 84" stroke="#a5b9ca" opacity=".25" stroke-width="3"/>' +
+    '<path d="M174 89V145M259 91V145M332 93V144" stroke="#555d69" opacity=".65"/><path d="M186 145H328" stroke="#fff" opacity=".4"/>' +
+    '<rect x="28" y="82" width="143" height="7" rx="2" fill="#252932"/><rect x="180" y="151" width="151" height="10" rx="4" fill="#20252d"/><path d="M186 153H326" stroke="#a2a9b2" stroke-width="2"/>' +
+    '<path d="M70 153A40 40 0 0 1 150 153M346 153A40 40 0 0 1 426 153" fill="none" stroke="#252a32" stroke-width="9"/>' +
+    '<rect x="213" y="99" width="19" height="5" rx="2" fill="#313740"/><rect x="293" y="99" width="19" height="5" rx="2" fill="#313740"/><rect x="328" y="83" width="25" height="13" rx="5" fill="#343a44"/><path d="M333 86H348" stroke="#c6ccd4" stroke-width="3"/>' +
+    '<rect x="27" y="100" width="9" height="23" rx="2" fill="#d63e49"/><rect x="28" y="110" width="7" height="5" fill="#e6d9da"/><path d="M415 109 439 113 441 123H416Z" fill="#f5eccb" stroke="#535b64"/><rect x="439" y="126" width="12" height="20" rx="2" fill="#222832"/><path d="M441 131H449M441 137H449" stroke="#929aa5"/><rect x="23" y="141" width="21" height="11" rx="3" fill="#252a33"/>' +
+    '<path d="M338 105H353L351 116H339Z" fill="#29313b"/><text x="340" y="113" fill="#cbd1d9" font-family="sans-serif" font-size="6" font-weight="700">XLT</text>' + wheel(110) + wheel(386) + '</svg>';
+}
+// Keep the saved mappings intact; exclusions affect this dashboard instance only.
+function kineticFilterDisabledEntities(config) {
+  if (!config || !Array.isArray(config.disabledEntities) || !config.disabledEntities.length) return config;
+  const disabled = new Set(config.disabledEntities);
+  function visit(value) {
+    if (typeof value === 'string') return disabled.has(value) ? '' : value;
+    if (Array.isArray(value)) return value.filter(v => !(typeof v === 'string' && disabled.has(v)) && !(v && typeof v === 'object' && (disabled.has(v.id) || disabled.has(v.entity)))).map(visit);
+    if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => !disabled.has(key)).map(([key, child]) => [key, key === 'disabledEntities' ? child : visit(child)]));
+    return value;
+  }
+  return visit(config);
+}
+window.onerror = function (message, source, line, column, error) { window.KINETIC_DIAGNOSTICS.record(message, source, line, column, error); };
 
 // ===== CONFIG: lives in config.js (one per house). The engine only fills in safe defaults. =====
 const ENGINE_VERSION = window.DASH_VER;
 const CONFIG = (() => {
-  const u = window.DASH_CONFIG;
+  const u = kineticFilterDisabledEntities(window.DASH_CONFIG);
   if (!u || typeof u !== "object") {
     document.body.innerHTML = '<div style="font:16px/1.5 system-ui,sans-serif;max-width:520px;margin:12vh auto;padding:24px;color:#e6e0e9"><h2 style="margin:0 0 8px">Dashboard config not found</h2>This page needs <b>config.js</b> in the same folder as dash.html, loaded with <code>&lt;script src="config.js"&gt;</code> before the dashboard script. If you just updated, hard-refresh and bump <code>?v=</code>.</div>';
     throw new Error("config.js missing (window.DASH_CONFIG is not set)");
@@ -2015,7 +2079,7 @@ function covMove(id) {
 }
 let covT = 0; function covTick() { clearTimeout(covT); if (Object.keys(COVMV).length) covT = setTimeout(() => { updTiles(); covTick(); }, 1500); }
 function call(domain, service, entity_id, data) { send({ type: "call_service", domain: domain, service: service, service_data: data || {}, target: { entity_id: entity_id } }); }
-function setStatus(ok, text) { const s = $("#st"); s.textContent = text || (ok ? "LIVE" : "OFFLINE"); s.classList.toggle("bad", !ok); }
+function setStatus(ok, text) { const s = $("#st"); s.textContent = text || (ok ? "LIVE" : "OFFLINE"); s.classList.toggle("bad", !ok); window.KINETIC_DIAGNOSTICS.connection = s.textContent; window.KINETIC_DIAGNOSTICS.render(); }
 // who is signed in? 1) the Home Assistant page around the iframe  2) the frontend's own login in this browser  3) the token in CONFIG
 let identDone = false;
 function setUser(u) {
@@ -2077,6 +2141,7 @@ function drawGsum() {
 }
 function setState(s) {
   const id = s.entity_id;
+  if ((CONFIG.disabledEntities || []).includes(id)) return;
   if (!vBusy) { REAL[id] = 1; if (VGM[id]) { clearTimeout(vTm); vTm = setTimeout(vGroups, 120); } }
   if (id === (CONFIG.houseAvg || CONFIG.indoor)) { states[id] = s; drawGsum(); }
   if (id === CONFIG.outside) $("#outs").textContent = f1(s.state) + "°C";
@@ -3322,7 +3387,7 @@ function quakeHtml() {   // Weather page + notifications: real quakes within haz
 const FLOWC = v => v < 0.1 ? "#a9a9a9" : v < 0.3 ? "#ffd34f" : v < 0.6 ? "#9fe7e8" : "#36a9e2";
 let irrI = 0, irrSc = 0, irrT = 0;
 
-// ---------- vehicle (Mercedes me) ----------
+// ---------- vehicle (legacy prefixes or explicit entity mappings) ----------
 function drawVehicle() {
   const V = CONFIG.vehicle, pg = $("#vehicle"); if (!pg) return;
   if (!V) { pg.innerHTML = '<div class="pn"><h2>Set up your vehicle</h2><p>No vehicle entities have been configured. Open Settings to enable Vehicle and map your Home Assistant sensors.</p><a href="' + esc(CONFIG.url + (CONFIG.settingsPath || '/config/dashboard')) + '">Open settings</a></div>'; return; }
@@ -3330,16 +3395,18 @@ function drawVehicle() {
   const N = k => { const e = E(k); return e && e.state !== "unavailable" && e.state !== "unknown" && !isNaN(+e.state) ? +e.state : null; };
   const B = k => { const e = V.entities && V.entities[k] ? states[V.entities[k]] : states["binary_sensor." + V.prefix + "_" + k]; return e && !['unknown', 'unavailable'].includes(e.state) ? e.state === "on" : null; };
   const fx = (v, d) => v == null ? "--" : (+v).toLocaleString(undefined, { maximumFractionDigits: d == null ? 0 : d });
-  const T = (m, v) => v == null ? "--" : (m && m[v] != null ? m[v] : "Code " + v);
+  const T = (m, v) => v == null ? "--" : (m && m[v] != null ? String(m[v]) : "Code " + v);
   const fuel = N("fuel_level"), range = N("range_liquid"), odo = N("odometer"), lk = N("lock"), ig = N("ignition_state");
   const fcol = fuel == null ? "var(--mut)" : fuel <= V.lowFuelPct ? "var(--heat)" : fuel <= 30 ? "#ffaa00" : "var(--mint)";
   const C = 2 * Math.PI * 54, off = fuel == null ? C : C * (1 - Math.min(100, fuel) / 100);
   const chip = (ic, t, on) => '<span class="vch' + (on ? " on" : "") + '">' + mdi(ic) + t + '</span>';
   const locked = lk === 1 || lk === 2, pb = B("park_brake_status");
-  const car = '<div class="vcar">' + (V.photo ? '<img alt="" src="' + esc(V.photo) + '" onerror="this.parentNode.classList.add(\'np\');this.remove()">' : "") + '<svg viewBox="0 0 400 170"><defs><linearGradient id="vcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34343c"/><stop offset=".45" stop-color="' + esc(V.color || "#16161a") + '"/><stop offset="1" stop-color="#050507"/></linearGradient></defs><ellipse cx="200" cy="146" rx="170" ry="9" fill="rgba(0,0,0,.45)"/><path d="M16 112C16 100 22 94 34 90L46 54C50 42 60 34 78 34H266C292 34 312 50 334 78L368 88C384 92 392 102 392 116V126H16Z" fill="url(#vcg)" stroke="rgba(255,255,255,.18)" stroke-width="1.4"/>\n<path d="M62 78L70 47H166V78ZM176 47H262C282 47 298 60 314 78H176Z" fill="#8fb0c8" fill-opacity=".38" stroke="rgba(255,255,255,.2)"/>\n<path d="M22 108H388" stroke="rgba(255,255,255,.12)" stroke-width="1.2"/><rect x="372" y="98" width="16" height="6" rx="3" fill="#ffe7a6" fill-opacity=".85"/><rect x="16" y="98" width="10" height="7" rx="3" fill="#ff5a5a" fill-opacity=".8"/><g><circle cx="94" cy="126" r="27" fill="#0a0a0c"/><circle cx="94" cy="126" r="16" fill="#3a3a42"/><circle cx="94" cy="126" r="6" fill="#16161a"/><circle cx="312" cy="126" r="27" fill="#0a0a0c"/><circle cx="312" cy="126" r="16" fill="#3a3a42"/><circle cx="312" cy="126" r="6" fill="#16161a"/></g></svg></div>';
+  const photo = V.photo || (V.appearance === 'ranger-xlt-artwork' ? 'ranger-xlt.png' : '');
+  const car = '<div class="vcar">' + (photo ? '<img alt="" src="' + esc(photo) + '" onerror="this.parentNode.classList.add(\'np\');this.remove()">' : "") + '<svg viewBox="0 0 400 170"><defs><linearGradient id="vcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34343c"/><stop offset=".45" stop-color="' + esc(V.color || "#16161a") + '"/><stop offset="1" stop-color="#050507"/></linearGradient></defs><ellipse cx="200" cy="146" rx="170" ry="9" fill="rgba(0,0,0,.45)"/><path d="M16 112C16 100 22 94 34 90L46 54C50 42 60 34 78 34H266C292 34 312 50 334 78L368 88C384 92 392 102 392 116V126H16Z" fill="url(#vcg)" stroke="rgba(255,255,255,.18)" stroke-width="1.4"/>\n<path d="M62 78L70 47H166V78ZM176 47H262C282 47 298 60 314 78H176Z" fill="#8fb0c8" fill-opacity=".38" stroke="rgba(255,255,255,.2)"/>\n<path d="M22 108H388" stroke="rgba(255,255,255,.12)" stroke-width="1.2"/><rect x="372" y="98" width="16" height="6" rx="3" fill="#ffe7a6" fill-opacity=".85"/><rect x="16" y="98" width="10" height="7" rx="3" fill="#ff5a5a" fill-opacity=".8"/><g><circle cx="94" cy="126" r="27" fill="#0a0a0c"/><circle cx="94" cy="126" r="16" fill="#3a3a42"/><circle cx="94" cy="126" r="6" fill="#16161a"/><circle cx="312" cy="126" r="27" fill="#0a0a0c"/><circle cx="312" cy="126" r="16" fill="#3a3a42"/><circle cx="312" cy="126" r="6" fill="#16161a"/></g></svg></div>';
+  const artwork = !photo && V.appearance === 'ranger-xlt' ? '<div class="vcar">' + vehicleRangerSvg(V.color) + '</div>' : car;
   const hero = '<div class="pn vhero"><div class="vring"><svg viewBox="0 0 130 130"><circle cx="65" cy="65" r="54" class="vr0"/><circle cx="65" cy="65" r="54" class="vr1" stroke="' + fcol + '" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 65 65)"/></svg><div class="vrt"><b>' + fx(fuel) + '<small>%</small></b><span class="lbl">Fuel</span></div></div>' +
     '<div class="vmain"><div class="lbl">' + esc(V.name || "Vehicle") + (V.plate ? " · " + esc(V.plate) : "") + '</div><div class="vbig">' + fx(range) + '<small> km range</small></div><div class="vodo">' + mdi("v-road") + fx(odo) + ' km odometer</div>' +
-    '<div class="vchips">' + chip(locked ? "v-lock" : "v-unlock", T(V.lockText, lk), locked) + chip("v-key", "Ignition " + T(V.ignitionText, ig).toLowerCase(), ig >= 2) + (pb != null ? chip("v-park", pb ? "Park brake on" : "Park brake off", pb) : "") + '</div></div>' + car + '</div>';
+    '<div class="vchips">' + chip(locked ? "v-lock" : "v-unlock", T(V.lockText, lk), locked) + chip("v-key", "Ignition " + T(V.ignitionText, ig).toLowerCase(), ig >= 2) + (pb != null ? chip("v-park", pb ? "Park brake on" : "Park brake off", pb) : "") + '</div></div>' + artwork + '</div>';
   const tr = (t, d, sp, co) => '<div class="vtr"><div class="lbl">' + t + '</div><div class="vtv"><div><b>' + fx(d, d < 100 ? 1 : 0) + '</b><span>km</span></div><div><b>' + fx(sp) + '</b><span>km/h avg</span></div><div><b>' + fx(co, 1) + '</b><span>L/100km</span></div></div></div>';
   const trips = '<div class="pn"><div class="lbl">' + mdi("v-speed") + ' Trips</div>' + tr("Current trip", N("distance_start"), N("average_speed_start"), N("liquid_consumption_start")) + tr("Since reset", N("distance_reset"), N("average_speed_reset"), N("liquid_consumption_reset")) + '</div>';
   const ecoCol = v => v == null ? "rgba(var(--w),.3)" : v < 40 ? "#f2b94b" : v < 70 ? "#c9e26b" : "#6fdcae";

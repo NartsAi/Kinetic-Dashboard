@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.0 - 2026-11-21
+
+- Vehicle preset dropdown, editable paint colour/preview and white Ranger XLT artwork.
+- Collapsed Climate/Lights/Covers/Sensors and other entity groups with per-entity app visibility toggles.
+- Tappable global error banner with copyable details. Existing errors need their full message to diagnose; this does not suppress them.
+
 ## 1.8.1 - 2026-11-21
 
 - Fix long Home camera grids stretching the forecast across multiple screens. Camera scrolling is independent and viewport-aware.

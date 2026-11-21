@@ -24,7 +24,7 @@ export async function publishDashboard({ config, staticDir, homeAssistantDir = '
     const files = await readdir(folder);
     if (files.length && !files.includes(marker)) throw Object.assign(new Error('www/kinetic already contains unmanaged files. Back up and rename that folder before publishing.'), { status: 409 });
   } catch (e) { if (e.code !== 'ENOENT') throw e; }
-  const assets = await Promise.all(['dash.html', 'brand-logo.js'].map(async name => [name, await readFile(path.join(staticDir, name))]));
+  const assets = await Promise.all(['dash.html', 'brand-logo.js', 'ranger-xlt.png', 'vehicle-art.js'].map(async name => [name, await readFile(path.join(staticDir, name))]));
   // www is public: export configuration data only, never an HA session or API token.
   const script = 'window.DASH_CONFIG=' + JSON.stringify({ ...config, token: '', settingsPath: '/hassio/dashboard' }) + ';window.DASH_CONFIG.url=location.origin;\n';
   await mkdir(folder, { recursive: true });

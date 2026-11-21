@@ -27,6 +27,7 @@ jobs:
           node tests/addon-browser.mjs
           node tests/tablet.mjs
           node tests/home-camera-layout.mjs
+          node tests/diagnostics.mjs
       - name: All dashboard regressions
         run: npm test
   container:
