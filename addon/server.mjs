@@ -3,6 +3,7 @@ import { readFile, mkdir, writeFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { publishDashboard } from './publish.mjs';
 
 // No Supervisor credential is needed: every HA request uses the current user's token.
 export function haRequest(token, commands, url = 'ws://homeassistant:8123/api/websocket') {
@@ -42,7 +43,7 @@ export function validateConfig(config) {
   return config;
 }
 
-export function createServer({ dataDir = '/data', staticDir = path.dirname(fileURLToPath(import.meta.url)), trustedPeer = '172.30.32.2', requestHA = haRequest } = {}) {
+export function createServer({ dataDir = '/data', staticDir = path.dirname(fileURLToPath(import.meta.url)), trustedPeer = '172.30.32.2', requestHA = haRequest, homeAssistantDir = '/homeassistant' } = {}) {
   const configFile = path.join(dataDir, 'dashboard.json');
   let saving = Promise.resolve();
   const load = async () => {
@@ -72,6 +73,17 @@ export function createServer({ dataDir = '/data', staticDir = path.dirname(fileU
         if (!match) return reply(401, { error: 'Home Assistant sign-in required' });
         const [user] = await requestHA(match[1], [{ type: 'auth/current_user' }]);
         if (!user?.is_admin) return reply(403, { error: 'An administrator must configure Kinetic' });
+        if (route === '/api/publish' && req.method === 'POST') {
+          const saved = await load();
+          if (!saved) return reply(409, { error: 'Save your dashboard configuration before publishing.' });
+          // Serialize with saves and other publishes so a file set cannot be interleaved.
+          const publish = saving.catch(() => {}).then(async () => {
+            const current = await load();
+            return publishDashboard({ config: validateConfig(current.config), staticDir, homeAssistantDir });
+          });
+          saving = publish;
+          return reply(200, await publish);
+        }
         if (route === '/api/config' && req.method === 'GET') return reply(200, await load() || { revision: null, config: {} });
         if (route === '/api/discovery' && req.method === 'GET') {
           const [areas, devices, entities, states] = await requestHA(match[1], ['config/area_registry/list', 'config/device_registry/list', 'config/entity_registry/list', 'get_states'].map(type => ({ type })));

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.0 - 2026-11-21
+
+- Publish saved configuration and dashboard assets to www/kinetic from setup, with ready-to-paste HA dashboard YAML.
+- Keep Fully Single App Kiosk running the HA Companion app with a normal HA dashboard as its default. The embedded dashboard uses the current non-admin user's HA session.
+- Map the HA configuration folder for explicit publication. Only www/kinetic is written; existing unmanaged folders are protected and no credentials are exported.
+
 ## 1.7.2 - 2026-11-21
 
 - Allow signed-in non-admin users to open the configured dashboard through the Ingress sidebar panel. Configuration and discovery APIs remain admin-only.

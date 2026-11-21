@@ -1,19 +1,20 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from '../addon/server.mjs';
 const dir = await mkdtemp(path.join(os.tmpdir(), 'kinetic-browser-'));
 const prefix = '/api/hassio_ingress/browser-test';
+const homeAssistantDir = path.join(dir, 'homeassistant'); await mkdir(homeAssistantDir);
 const inventory = { areas: [{ area_id: 'living', name: 'Living room' }], devices: [{ id: 'lamp', area_id: 'living' }],
   entities: [{ entity_id: 'light.living', device_id: 'lamp' }], states: [{ entity_id: 'light.living', state: 'off', attributes: { friendly_name: 'Living lamp' } }, { entity_id: 'sensor.my_car_fuel', state: '67', attributes: { friendly_name: 'Car fuel' } }] };
 const result = { 'auth/current_user': { is_admin: true }, 'config/area_registry/list': inventory.areas, 'config/device_registry/list': inventory.devices, 'config/entity_registry/list': inventory.entities, get_states: inventory.states };
-const server = createServer({ dataDir: dir, staticDir: path.resolve('addon'), trustedPeer: '127.0.0.1', requestHA: async (_, commands) => commands.map(c => result[c.type]) });
+const server = createServer({ dataDir: dir, homeAssistantDir, staticDir: path.resolve('addon'), trustedPeer: '127.0.0.1', requestHA: async (_, commands) => commands.map(c => result[c.type]) });
 // Simulate Supervisor stripping the prefix and adding the trusted header.
 server.prependListener('request', req => { req.url = req.url.replace(prefix, '') || '/'; req.headers['x-ingress-path'] = prefix; });
 await new Promise(r => server.listen(0, '127.0.0.1', r));
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
     const page = await browser.newPage({ viewport }); const errors = [];
@@ -55,6 +56,9 @@ try {
     await page.waitForURL('**/setup.html');
     await page.locator('#areas').waitFor({ state: 'visible' });
     assert.equal(JSON.parse(await page.locator('#config').inputValue()).brand.name, 'Our home');
+    await page.locator('#publish').click();
+    await page.locator('#tablet-result').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#tablet-yaml').inputValue(), /\/local\/kinetic\/dash.html/);
     await page.close();
   }
   console.log('Add-on browser tests passed: phone/tablet wizard, save, dashboard boot and persisted configuration');

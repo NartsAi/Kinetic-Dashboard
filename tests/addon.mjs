@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer, validateConfig, haRequest } from '../addon/server.mjs';
 import { discover } from '../addon/discovery.mjs';
 import { diagnostics } from '../addon/config-manager.mjs';
+import { publishDashboard } from '../addon/publish.mjs';
 
 test('feature diagnostics explain missing vehicle, hidden pages and broken entity mappings', () => {
   const inventory = { states: [{ entity_id: 'sensor.fuel', state: 'unavailable' }] };
@@ -39,7 +40,8 @@ test('configuration rejects credentials and prototype pollution', () => {
 
 test('Ingress, admin authorization, routing, revisions and restart persistence', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'kinetic-test-'));
-  const options = { dataDir: dir, staticDir: path.resolve('addon'), trustedPeer: '127.0.0.1',
+  const homeAssistantDir = path.join(dir, 'ha'); await mkdir(homeAssistantDir);
+  const options = { dataDir: dir, homeAssistantDir, staticDir: path.resolve('addon'), trustedPeer: '127.0.0.1',
     requestHA: async (token, commands) => {
       if (token === 'invalid') throw Object.assign(Error('Invalid token'), { status: 401 });
       return commands.map(c => c.type === 'auth/current_user' ? { is_admin: token === 'admin' } : []);
@@ -54,6 +56,8 @@ test('Ingress, admin authorization, routing, revisions and restart persistence',
     assert.equal((await request('/')).headers.get('location'), base + '/setup.html');
     assert.equal((await request('/api/config', 'GET', undefined, 'invalid')).status, 401);
     assert.equal((await request('/api/config', 'GET', undefined, 'regular')).status, 403);
+    assert.equal((await request('/api/publish', 'POST', undefined, 'regular')).status, 403);
+    assert.equal((await request('/api/publish', 'POST')).status, 409);
     assert.equal((await request('/api/config', 'PUT', {}, 'admin', { 'Sec-Fetch-Site': 'cross-site' })).status, 403);
     assert.equal((await request('/api/config', 'PUT', { revision: null, config: { token: 'secret' } })).status, 400);
     assert.equal((await request('/api/config', 'PUT', null)).status, 400);
@@ -61,6 +65,13 @@ test('Ingress, admin authorization, routing, revisions and restart persistence',
     const config = { house: [], brand: { name: 'Test home' }, tariff: { daily: 2 } };
     const saved = await (await request('/api/config', 'PUT', { revision: null, config })).json();
     assert.ok(saved.revision);
+    const publication = await (await request('/api/publish', 'POST')).json();
+    assert.equal(publication.url, '/local/kinetic/dash.html');
+    assert.match(publication.dashboard_yaml, /type: panel/);
+    const exportedConfig = await readFile(path.join(homeAssistantDir, 'www/kinetic/config.js'), 'utf8');
+    assert.match(exportedConfig, /"token":""/); assert.doesNotMatch(exportedConfig, /Bearer|admin|SUPERVISOR|hassio_ingress/);
+    assert.equal(await readFile(path.join(homeAssistantDir, 'www/kinetic/dash.html'), 'utf8'), await readFile('addon/dash.html', 'utf8'));
+    assert.equal((await request('/api/publish', 'POST')).status, 200);
     assert.equal((await request('/api/config', 'PUT', { revision: null, config })).status, 409);
     assert.equal((await request('/')).headers.get('location'), base + '/dash.html');
     const script = await (await request('/config.js')).text();
@@ -73,6 +84,17 @@ test('Ingress, admin authorization, routing, revisions and restart persistence',
     await stop(); url = await start({ trustedPeer: '172.30.32.2' });
     assert.equal((await request('/api/config', 'GET', undefined, 'admin', { 'X-Forwarded-For': '172.30.32.2' })).status, 403);
   } finally { await stop(); await rm(dir, { recursive: true, force: true }); }
+});
+
+test('publisher refuses missing HA mounts and existing unmanaged folders', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'kinetic-publish-'));
+  try {
+    await assert.rejects(publishDashboard({ config: {}, staticDir: 'addon', homeAssistantDir: path.join(dir, 'missing') }), e => e.status === 503);
+    await mkdir(path.join(dir, 'www/kinetic'), { recursive: true });
+    await writeFile(path.join(dir, 'www/kinetic/config.js'), 'keep me');
+    await assert.rejects(publishDashboard({ config: {}, staticDir: 'addon', homeAssistantDir: dir }), e => e.status === 409);
+    assert.equal(await readFile(path.join(dir, 'www/kinetic/config.js'), 'utf8'), 'keep me');
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('HA websocket authenticates as the user and propagates permission failures', async () => {

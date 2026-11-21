@@ -10,6 +10,36 @@ Use the dashboard Settings link to revisit setup. Refresh discovery to find adde
 
 # Authentication and permissions
 
+## Tablet with Fully Single App Kiosk
+
+You can keep Fully Single App Kiosk locking the tablet to the Home Assistant Android app. A normal HA dashboard can embed the published Kinetic `dash.html`; there is no requirement to replace the kiosk app or make the tablet user an administrator.
+
+1. Update the add-on to **1.8.0** and restart it. The add-on now mounts the HA configuration folder read/write so it can publish its assets. Its publisher only writes to the dedicated `www/kinetic/` folder; it does not edit HA configuration YAML or `.storage` dashboard records.
+2. As an administrator, complete/save Kinetic setup, reopen its Settings, and find **Use in the Home Assistant app**. Click **Publish saved dashboard for tablet**. This publishes the last saved configuration, not unsaved editor changes.
+3. In HA, open **Settings → Dashboards → Add dashboard** and create a new empty dashboard named **Kinetic Tablet**, with a URL such as `dashboard-kinetic`. Leave **Admin only** off and enable its sidebar entry.
+4. Open that new dashboard, select Edit → menu → **Raw configuration editor**, and replace its configuration with the YAML shown by the publisher (also reproduced below).
+5. On the tablet, keep the dedicated non-admin user signed in, open its profile, and choose **Kinetic Tablet** as its default dashboard (Appearance / This mobile app, depending on HA version). Keep Fully Single App Kiosk's selected app as **Home Assistant**. Restart the HA app and verify it opens the chosen dashboard.
+
+```yaml
+title: Kinetic Tablet
+views:
+  - title: Kinetic
+    path: home
+    type: panel
+    cards:
+      - type: iframe
+        url: /local/kinetic/dash.html
+        hide_background: true
+```
+
+Use the same Home Assistant origin for the parent page and `/local/` iframe, so it can reuse the tablet user's HA session. The relative URL also works when accessing HA remotely. Live states and controls still require HA authentication. No admin token is copied to the tablet or written into the files. Configuration and branding under `/local/kinetic/` are publicly readable, as with the original standalone installation; do not put secrets in them.
+
+Publish again after saving configuration changes or upgrading the add-on, then reload the tablet page. If `www` did not exist before publication, restart HA once to enable `/local/`. If publication finds an existing unmanaged `www/kinetic` folder, back it up and rename it before retrying. Configuration changes are managed through the Kinetic add-on; the exported Settings shortcut opens the HA add-on list. HA's own header/sidebar remains part of the normal dashboard; the Android kiosk lock does not hide those frontend controls.
+
+## Upstream comparison
+
+On 2026-11-21, `federico9292/Kinetic-Dashboard` main was exactly commit `b55df5b7436acf4200bc90e2baac286a20bf3b3a` (v1.5.9), the same upstream baseline used here. No newer changes needed merging. Our 1.8.0 version includes add-on and configuration features on top of that baseline.
+
 Starting with add-on 1.7.2, `panel_admin: false` makes the Kinetic sidebar panel available to signed-in non-admin users. Finish setup as an administrator first, enable **Show in sidebar** on the add-on, then reload the tablet's Home Assistant frontend. Configuration and registry discovery still require an administrator.
 
 For Fully Single App Kiosk running the Home Assistant Android app, keep Home Assistant as the selected kiosk application and open **Kinetic** from its sidebar while signed in as the tablet user. Fully Single App Kiosk controls which Android app is open; it does not choose the page within Home Assistant. For Fully Kiosk Browser instead, use the stable sidebar-panel URL copied from a normal browser after clicking Kinetic as the Start URL. Do not bookmark `/api/hassio_ingress/<token>/` session URLs or the administrator's setup page.

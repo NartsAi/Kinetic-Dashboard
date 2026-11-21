@@ -50,6 +50,7 @@ async function connect() {
     $('config').value = JSON.stringify(saved.config, null, 2);
     $('name').value = saved.config.brand?.name || 'My home';
     $('review').hidden = false;
+    $('tablet').hidden = false;
     discovery = await api('discovery');
     manage(saved.config);
     $('counts').textContent = `${discovery.areas.length} areas · ${discovery.devices.length} devices · ${discovery.entities.length} entities. Unassigned cameras, climate, media and calendars are also included.`;
@@ -64,6 +65,15 @@ async function connect() {
   } catch (e) { status(e.message); } finally { $('refresh').disabled = false; }
 }
 $('refresh').onclick = connect;
+$('publish').onclick = async () => {
+  $('publish').disabled = true;
+  try {
+    status('Publishing your last saved configuration to Home Assistant…');
+    const result = await api('publish', { method: 'POST' });
+    $('tablet-yaml').value = result.dashboard_yaml; $('tablet-result').hidden = false;
+    status('Published at ' + result.url + '. Create a non-admin-only HA dashboard using the YAML below, then select it as the tablet user’s default dashboard. If www was just created, restart Home Assistant once.');
+  } catch (e) { status(e.message); } finally { $('publish').disabled = false; }
+};
 $('generate').onclick = () => {
   try {
     const existing = JSON.parse($('config').value);

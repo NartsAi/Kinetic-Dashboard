@@ -22,10 +22,12 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
-      - name: All dashboard regressions and setup wizard
+      - name: Setup wizard and non-admin tablet embed
         run: |
-          npm test
           node tests/addon-browser.mjs
+          node tests/tablet.mjs
+      - name: All dashboard regressions
+        run: npm test
   container:
     runs-on: ubuntu-latest
     steps:
