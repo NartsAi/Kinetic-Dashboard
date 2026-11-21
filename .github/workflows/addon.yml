@@ -1,0 +1,38 @@
+name: Add-on validation
+on:
+  push:
+    branches: [main, 'feature/ha-addon-*']
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify generated engine and add-on assets
+        run: |
+          node build.mjs --check
+          cmp dash.html addon/dash.html
+          cmp brand-logo.js addon/brand-logo.js
+      - name: Backend tests
+        run: node --test tests/addon.mjs
+      - name: Install browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Setup wizard and non-admin tablet embed
+        run: |
+          node tests/addon-browser.mjs
+          node tests/tablet.mjs
+          node tests/home-camera-layout.mjs
+          node tests/diagnostics.mjs
+      - name: All dashboard regressions
+        run: npm test
+  container:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build installable add-on container
+        run: docker build -t kinetic-addon:test addon

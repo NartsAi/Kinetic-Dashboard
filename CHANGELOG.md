@@ -4,6 +4,38 @@ All notable changes to Kinetic, newest first. The version is the number in the `
 
 Versions are `MAJOR.MINOR.PATCH`. Bug fixes raise the patch number (1.0.0 to 1.0.1), new features raise the minor number (1.0.1 to 1.1.0), and big changes raise the major number (2.0.0). When a release is published, its notes are taken from the matching section below.
 
+## 1.9.0 - 2026-11-21
+
+- Add Ranger XLT vehicle illustrations, an editable paint colour and live setup preview; retain custom photo URLs and original estate styling.
+- Add collapsed, searchable entity groups with Kinetic-only enable/disable toggles. Preserve mappings when hiding entities and restore them when re-enabled.
+- Make the global JS error banner open full copyable diagnostics, including engine version and source line; retain errors across navigation and capture unhandled promises.
+- Accept numeric vehicle status text mappings without a string-method exception.
+
+## 1.8.1 - 2026-11-21
+
+- Bound the Home camera gallery to the available viewport, with independent scrolling and a natural-height forecast. Keep fullscreen camera overlays working from inside the gallery.
+- Add separate Home/Security camera selections and retain them when regenerating area mappings.
+
+## 1.8.0 - 2026-11-21
+
+- Publish the saved dashboard to Home Assistant www/kinetic with paste-ready panel dashboard YAML for the Companion app and Fully Single App Kiosk.
+- Add admin-only publication, fixed output paths, existing-folder protection and non-admin iframe authentication tests.
+
+## 1.7.1 - 2026-10-23
+
+- Add the approved Kinetic house/dashboard icon and logo for the Home Assistant add-on store.
+
+## 1.7.0 - 2026-10-23
+
+- Add a feature configuration manager with visible pages, vehicle sensor pickers, common entity mappings and missing/unavailable entity diagnostics.
+- Support explicit vehicle sensor mappings alongside legacy prefixes and refresh mapped values live.
+- Explain missing vehicle setup instead of showing an empty page; tolerate absent status text maps.
+
+## 1.6.0 - 2026-10-23
+
+- Add an installable Home Assistant add-on preview with authenticated Ingress, admin setup, registry discovery and persistent configuration.
+- Preserve the standalone dashboard; fix startup for homes without climate entities and route add-on Settings within Ingress.
+
 ## 1.5.9 - 2026-10-21
 
 ### Fixes

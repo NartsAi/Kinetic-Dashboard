@@ -16,7 +16,7 @@ function covMove(id) {
 }
 let covT = 0; function covTick() { clearTimeout(covT); if (Object.keys(COVMV).length) covT = setTimeout(() => { updTiles(); covTick(); }, 1500); }
 function call(domain, service, entity_id, data) { send({ type: "call_service", domain: domain, service: service, service_data: data || {}, target: { entity_id: entity_id } }); }
-function setStatus(ok, text) { const s = $("#st"); s.textContent = text || (ok ? "LIVE" : "OFFLINE"); s.classList.toggle("bad", !ok); }
+function setStatus(ok, text) { const s = $("#st"); s.textContent = text || (ok ? "LIVE" : "OFFLINE"); s.classList.toggle("bad", !ok); window.KINETIC_DIAGNOSTICS.connection = s.textContent; window.KINETIC_DIAGNOSTICS.render(); }
 // who is signed in? 1) the Home Assistant page around the iframe  2) the frontend's own login in this browser  3) the token in CONFIG
 let identDone = false;
 function setUser(u) {
@@ -78,6 +78,7 @@ function drawGsum() {
 }
 function setState(s) {
   const id = s.entity_id;
+  if ((CONFIG.disabledEntities || []).includes(id)) return;
   if (!vBusy) { REAL[id] = 1; if (VGM[id]) { clearTimeout(vTm); vTm = setTimeout(vGroups, 120); } }
   if (id === (CONFIG.houseAvg || CONFIG.indoor)) { states[id] = s; drawGsum(); }
   if (id === CONFIG.outside) $("#outs").textContent = f1(s.state) + "°C";

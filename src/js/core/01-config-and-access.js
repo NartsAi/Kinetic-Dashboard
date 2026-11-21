@@ -1,9 +1,9 @@
-window.onerror = function (m, u, l) { document.documentElement.classList.remove("boot"); var s = document.getElementById("st"); s.className = "bad"; s.textContent = "JS ERROR: " + m + " (line " + l + ")"; };
+window.onerror = function (message, source, line, column, error) { window.KINETIC_DIAGNOSTICS.record(message, source, line, column, error); };
 
 // ===== CONFIG: lives in config.js (one per house). The engine only fills in safe defaults. =====
 const ENGINE_VERSION = window.DASH_VER;
 const CONFIG = (() => {
-  const u = window.DASH_CONFIG;
+  const u = kineticFilterDisabledEntities(window.DASH_CONFIG);
   if (!u || typeof u !== "object") {
     document.body.innerHTML = '<div style="font:16px/1.5 system-ui,sans-serif;max-width:520px;margin:12vh auto;padding:24px;color:#e6e0e9"><h2 style="margin:0 0 8px">Dashboard config not found</h2>This page needs <b>config.js</b> in the same folder as dash.html, loaded with <code>&lt;script src="config.js"&gt;</code> before the dashboard script. If you just updated, hard-refresh and bump <code>?v=</code>.</div>';
     throw new Error("config.js missing (window.DASH_CONFIG is not set)");

@@ -17,6 +17,8 @@ tests/smoke.mjs           boots dash.html in headless Chromium with an invented 
 
 ## Everyday loop
 
+The installable Home Assistant add-on lives in `addon/`. Run `npm run package:addon` after engine changes to rebuild `dash.html` and copy it with `brand-logo.js` into the add-on build context. Run `npm run test:addon` for backend security/persistence/discovery tests and phone/tablet first-run browser tests. The backend is dependency-free Node 22+ and never uses a Supervisor token. See `addon/DOCS.md` for its security model and installation steps.
+
 ```
 node build.mjs          # src/  ->  dash.html
 node build.mjs --check  # fails if dash.html is not what src/ builds to (CI runs this)

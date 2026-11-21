@@ -1,0 +1,19 @@
+/* Home uses the iframe's available viewport, not the number of camera feeds. */
+#home .hm{align-items:start}
+#home .side{align-self:start;min-height:0}
+#home #fcp{flex:0 0 auto}
+#home #fcp #fc{flex:0 0 auto}
+#home #cams{
+  min-width:0;min-height:0;max-height:var(--home-camera-height,55dvh);
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
+  scrollbar-width:thin;scrollbar-color:var(--mut) transparent;
+  scrollbar-gutter:stable;align-self:start;align-items:start;
+}
+#home #cams>.cam:not(.fs){aspect-ratio:16/9;min-width:0}
+#home #cams:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+@media(min-width:1101px){
+  #home .side{max-height:var(--home-camera-height,65dvh);overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin}
+  #home .side>#mini{flex-shrink:0}
+}
+/* Entry animations must not become containing blocks for fixed camera overlays. */
+#home .hm:has(.cam.fs),#home #cams:has(>.cam.fs){animation:none}

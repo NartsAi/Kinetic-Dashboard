@@ -9,9 +9,18 @@
 > `config.example.js` contains invented sample data only. Copy it to `config.js` and replace the entity ids with your own.
 
 ## Install
+
+### Home Assistant add-on (preview)
+
+For Home Assistant OS / Supervisor, add `https://github.com/NartsAi/Kinetic-Dashboard#feature/ha-addon-ingress-20261023` to the add-on store repositories, install **Kinetic Dashboard**, start it and open its Web UI. The first-run wizard discovers your areas/devices/entities and saves your configuration persistently. Setup requires an HA administrator; dashboard controls keep each user's HA permissions. See [add-on documentation](addon/DOCS.md) for migration and discovery rules.
+
+### Original standalone installation
+
+For an add-on-managed tablet install, use **Settings → Use in the Home Assistant app → Publish saved dashboard for tablet**. Embed `/local/kinetic/dash.html` in a new HA dashboard with the supplied YAML and select it as the tablet user's default. See [tablet instructions](addon/DOCS.md#tablet-with-fully-single-app-kiosk).
+
 1. Put `dash.html`, `config.js` (copied from `config.example.js`) and `brand-logo.js` in Home Assistant's `www/` folder (served as `/local/`).
 2. Open `https://<your-ha>/local/dash.html` and sign in with your normal Home Assistant login. Leave `token` empty in `config.js`; never paste a long-lived token, because `www/` files can be read without a login.
-3. Add [script](https://github.com/ElementZoom/Kinetic-Dashboard/tree/main/scripts) folder to your root HA folder.
+3. Add [script](https://github.com/federico9292/Kinetic-Dashboard/tree/main/scripts) folder to your root HA folder.
 4. Open `config.yaml` and add the contents into your config.yaml for the automation and the lyric script to work
 5. After every edit, bump the `?v=` number on the `config.js` script line and hard-refresh (tablets and phones cache hard).
 6. Optional: for the per-person Access panel, create one Text helper (Settings > Devices & services > Helpers, max length 255) and set `entities.access` in `config.js`.
