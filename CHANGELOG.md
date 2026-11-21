@@ -4,6 +4,11 @@ All notable changes to Kinetic, newest first. The version is the number in the `
 
 Versions are `MAJOR.MINOR.PATCH`. Bug fixes raise the patch number (1.0.0 to 1.0.1), new features raise the minor number (1.0.1 to 1.1.0), and big changes raise the major number (2.0.0). When a release is published, its notes are taken from the matching section below.
 
+## 1.8.1 - 2026-11-21
+
+- Bound the Home camera gallery to the available viewport, with independent scrolling and a natural-height forecast. Keep fullscreen camera overlays working from inside the gallery.
+- Add separate Home/Security camera selections and retain them when regenerating area mappings.
+
 ## 1.8.0 - 2026-11-21
 
 - Publish the saved dashboard to Home Assistant www/kinetic with paste-ready panel dashboard YAML for the Companion app and Fully Single App Kiosk.

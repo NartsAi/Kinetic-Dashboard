@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.1 - 2026-11-21
+
+- Fix long Home camera grids stretching the forecast across multiple screens. Camera scrolling is independent and viewport-aware.
+- Add Home/Security camera checkboxes in setup and preserve selections when regenerating configuration.
+
 ## 1.8.0 - 2026-11-21
 
 - Publish saved configuration and dashboard assets to www/kinetic from setup, with ready-to-paste HA dashboard YAML.

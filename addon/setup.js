@@ -78,7 +78,8 @@ $('generate').onclick = () => {
   try {
     const existing = JSON.parse($('config').value);
     const selected = [...$('area-list').querySelectorAll('input:checked')].map(el => el.value);
-    const config = { ...existing, ...discover(discovery, selected), brand: { ...existing.brand, name: $('name').value, intro: false } };
+    const generated = discover(discovery, selected);
+    const config = { ...existing, ...generated, cameras: existing.cameras ?? generated.cameras, security: existing.security ?? generated.security, brand: { ...existing.brand, name: $('name').value, intro: false } };
     $('config').value = JSON.stringify(config, null, 2); $('review').hidden = false;
     manage(config);
     status('Generated. Review your mappings, then save.'); $('review').scrollIntoView({ behavior: 'smooth' });

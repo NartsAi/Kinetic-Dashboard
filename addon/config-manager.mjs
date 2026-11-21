@@ -36,6 +36,23 @@ export function renderManager(config, inventory, apply) {
     const label = add('label', '', pageGroup), input = add('input', '', label); input.type = 'checkbox'; input.checked = !Array.isArray(config.pages) || config.pages.includes(page); input.dataset.page = page;
     label.append(document.createTextNode(' ' + page)); pages.set(page, input);
   }
+  const cameraGroup = add('details'); add('summary', 'Cameras shown on Home and Security', cameraGroup);
+  add('p', 'Discovery can include tablet cameras, recording entities and alternate streams. Choose the feeds you want on each page. The Home gallery scrolls independently when there are many feeds.', cameraGroup);
+  const cameraStates = new Map(inventory.states.filter(s => s.entity_id.startsWith('camera.')).map(s => [s.entity_id, s]));
+  const cameraIds = [...new Set([...(config.cameras || []).map(c => c.id), ...(config.security || []).map(c => c.id), ...cameraStates.keys()])];
+  const cameraChoices = new Map();
+  for (const id of cameraIds) {
+    const row = add('div', '', cameraGroup); row.style.marginBottom = '12px';
+    add('b', cameraStates.get(id)?.attributes?.friendly_name || id, row); add('small', ' ' + id, row);
+    const choices = {};
+    for (const [key, title] of [['cameras', 'Home'], ['security', 'Security']]) {
+      const label = add('label', '', row), input = add('input', '', label); input.type = 'checkbox';
+      input.checked = (config[key] || []).some(c => c.id === id); input.dataset.cameraPage = key; input.dataset.cameraId = id;
+      label.append(document.createTextNode(' ' + title)); choices[key] = input;
+    }
+    cameraChoices.set(id, choices);
+  }
+  if (!cameraIds.length) add('p', 'No camera entities were discovered. Refresh discovery after adding cameras.', cameraGroup);
   const vehicleGroup = add('details'); vehicleGroup.open = true; add('summary', 'Vehicle configuration', vehicleGroup);
   const enabledLabel = add('label', '', vehicleGroup), enabled = add('input', '', enabledLabel); enabled.type = 'checkbox'; enabled.id = 'vehicle-enabled'; enabled.checked = !!config.vehicle; enabledLabel.append(document.createTextNode(' Enable vehicle'));
   enabled.onchange = () => { if (enabled.checked) pages.get('vehicle').checked = true; };
@@ -63,6 +80,7 @@ export function renderManager(config, inventory, apply) {
     try {
       const next = JSON.parse(document.getElementById('config').value);
       next.pages = [...pages].filter(([, input]) => input.checked).map(([page]) => page);
+      for (const key of ['cameras', 'security']) next[key] = [...cameraChoices].filter(([, choices]) => choices[key].checked).map(([id]) => (next[key] || []).find(c => c.id === id) || { id, name: cameraStates.get(id)?.attributes?.friendly_name || id });
       if (enabled.checked) {
         next.vehicle = { lowFuelPct: 15, ...next.vehicle, name: name.value.trim(), prefix: prefix.value.trim(), plate: plate.value.trim(), entities: { ...next.vehicle?.entities } };
         for (const [key, input] of bindings) { const id = input.value.trim(); if (id && !/^(sensor|binary_sensor)\.[a-z0-9_]+$/.test(id)) throw Error('Vehicle mappings must be sensor or binary_sensor entity IDs: ' + key); next.vehicle.entities[key] = id; }

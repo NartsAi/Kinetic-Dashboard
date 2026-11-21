@@ -33,6 +33,7 @@
 <!-- @include css/23-hazard-alerts.css -->
 <!-- @include css/24-garage-alert.css -->
 <!-- @include css/25-camera-full-screen.css -->
+<!-- @include css/26-home-camera-layout.css -->
 </style>
 </head>
 <body>
@@ -52,7 +53,7 @@
   <div id="home" class="page on">
     <div class="pn hs"><canvas id="wfx"></canvas><b id="gr"></b><span id="dt" class="lbl"></span><span id="wchip" class="wch">--</span><span id="wwind" class="wch"></span><span id="whl" class="lbl">--</span></div>
     <div class="hm">
-      <div class="left"><div class="cams" id="cams"></div><div class="rooms" id="rooms"></div></div>
+      <div class="left"><div class="cams" id="cams" tabindex="0" role="region" aria-label="Home cameras, scroll for more feeds"></div><div class="rooms" id="rooms"></div></div>
       <div class="side">
         <div class="pn" id="mini"><div class="lbl">Heat pump</div>
           <div class="mrow"><div id="mid"><span class="lbl">Indoor</span><b id="mi">--</b></div><div id="mod"><span class="lbl">Outdoor</span><b id="mo">--</b></div></div>

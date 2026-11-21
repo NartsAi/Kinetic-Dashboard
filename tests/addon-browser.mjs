@@ -10,6 +10,7 @@ const homeAssistantDir = path.join(dir, 'homeassistant'); await mkdir(homeAssist
 const inventory = { areas: [{ area_id: 'living', name: 'Living room' }], devices: [{ id: 'lamp', area_id: 'living' }],
   entities: [{ entity_id: 'light.living', device_id: 'lamp' }], states: [{ entity_id: 'light.living', state: 'off', attributes: { friendly_name: 'Living lamp' } }, { entity_id: 'sensor.my_car_fuel', state: '67', attributes: { friendly_name: 'Car fuel' } }] };
 const result = { 'auth/current_user': { is_admin: true }, 'config/area_registry/list': inventory.areas, 'config/device_registry/list': inventory.devices, 'config/entity_registry/list': inventory.entities, get_states: inventory.states };
+inventory.states.push(...['front', 'tablet'].map(id => ({ entity_id: 'camera.' + id, state: 'idle', attributes: { friendly_name: id } })));
 const server = createServer({ dataDir: dir, homeAssistantDir, staticDir: path.resolve('addon'), trustedPeer: '127.0.0.1', requestHA: async (_, commands) => commands.map(c => result[c.type]) });
 // Simulate Supervisor stripping the prefix and adding the trusted header.
 server.prependListener('request', req => { req.url = req.url.replace(prefix, '') || '/'; req.headers['x-ingress-path'] = prefix; });
@@ -40,8 +41,14 @@ try {
     await page.locator('#vehicle-enabled').check();
     await page.locator('#vehicle-name').fill('Family car');
     await page.locator('#vehicle-fuel_level').fill('sensor.my_car_fuel');
+    await page.locator('#manager summary').filter({ hasText: 'Cameras shown on Home and Security' }).click();
+    await page.locator('input[data-camera-page="cameras"][data-camera-id="camera.tablet"]').uncheck();
     await page.locator('#apply-features').click();
     assert.equal(JSON.parse(await page.locator('#config').inputValue()).vehicle.entities.fuel_level, 'sensor.my_car_fuel');
+    assert.deepEqual(JSON.parse(await page.locator('#config').inputValue()).cameras.map(c => c.id), ['camera.front']);
+    assert.equal(JSON.parse(await page.locator('#config').inputValue()).security.length, 2);
+    await page.locator('#generate').click();
+    assert.deepEqual(JSON.parse(await page.locator('#config').inputValue()).cameras.map(c => c.id), ['camera.front']);
     await page.locator('#save').click();
     await page.waitForURL('**/dash.html');
     await page.waitForTimeout(1200);

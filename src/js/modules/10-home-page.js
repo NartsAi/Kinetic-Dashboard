@@ -237,7 +237,33 @@ const camsOn = () => layout().indexOf("cams") > -1;
 function applyLayout() {
   const L = layout();
   Object.keys(HOME).forEach(k => { const el = $(HOME[k]), i = L.indexOf(k); el.style.display = i < 0 ? "none" : ""; el.style.order = i < 0 ? 0 : i; });
+  fitHomeCameras();
 }
+let homeCameraObserver = null, homeCameraFrame = 0;
+function fitHomeCameras() {
+  if (!homeCameraObserver && typeof ResizeObserver !== 'undefined') {
+    homeCameraObserver = new ResizeObserver(fitHomeCameras);
+    ['#home', '#home .hs', '#rooms', '#home .side'].forEach(selector => { const el = $(selector); if (el) homeCameraObserver.observe(el); });
+  }
+  if (homeCameraFrame) return;
+  homeCameraFrame = requestAnimationFrame(() => {
+    homeCameraFrame = 0;
+    const page = $('#home'), cams = $('#cams'), grid = $('#home .hm');
+    if (!page.classList.contains('on') || !camsOn()) return;
+    const height = el => {
+      if (!el || getComputedStyle(el).display === 'none') return 0;
+      const css = getComputedStyle(el);
+      return el.offsetHeight + (parseFloat(css.marginTop) || 0) + (parseFloat(css.marginBottom) || 0);
+    };
+    const gap = parseFloat(getComputedStyle(grid).rowGap) || 14;
+    let available = page.clientHeight - height($('#home .hs')) - height($('#rooms')) - gap - 16;
+    // Portrait tablets stack the climate/forecast row below the cameras.
+    if (innerWidth > 760 && innerWidth <= 1100) available -= height($('#home .side')) + gap;
+    if (isMobile()) available = Math.min(480, page.clientHeight * .6);
+    grid.style.setProperty('--home-camera-height', Math.max(180, Math.floor(available)) + 'px');
+  });
+}
+addEventListener('resize', fitHomeCameras);
 function cams() {   // snapshot fallback for cameras that aren't live
   if (!camPage() || (onHome() && !camsOn())) return;
   camList().forEach(c => { if (!c.live) camSnap(c); });

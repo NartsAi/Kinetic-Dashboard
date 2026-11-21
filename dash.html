@@ -1572,6 +1572,25 @@ html[data-mode=light] .ldt.run{background:linear-gradient(160deg,rgba(60,150,255
 #nacc[data-k=laundry] svg{fill:none}
 @media(prefers-reduced-motion:reduce){.ldt.run,.ldt.run .ldi,.ldt.run .wv,#nacc[data-k=laundry] .wv{animation:none}}
 .tg3>.ldt{grid-column:1/-1}
+/* Home uses the iframe's available viewport, not the number of camera feeds. */
+#home .hm{align-items:start}
+#home .side{align-self:start;min-height:0}
+#home #fcp{flex:0 0 auto}
+#home #fcp #fc{flex:0 0 auto}
+#home #cams{
+  min-width:0;min-height:0;max-height:var(--home-camera-height,55dvh);
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
+  scrollbar-width:thin;scrollbar-color:var(--mut) transparent;
+  scrollbar-gutter:stable;align-self:start;align-items:start;
+}
+#home #cams>.cam:not(.fs){aspect-ratio:16/9;min-width:0}
+#home #cams:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+@media(min-width:1101px){
+  #home .side{max-height:var(--home-camera-height,65dvh);overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin}
+  #home .side>#mini{flex-shrink:0}
+}
+/* Entry animations must not become containing blocks for fixed camera overlays. */
+#home .hm:has(.cam.fs),#home #cams:has(>.cam.fs){animation:none}
 </style>
 </head>
 <body>
@@ -1591,7 +1610,7 @@ html[data-mode=light] .ldt.run{background:linear-gradient(160deg,rgba(60,150,255
   <div id="home" class="page on">
     <div class="pn hs"><canvas id="wfx"></canvas><b id="gr"></b><span id="dt" class="lbl"></span><span id="wchip" class="wch">--</span><span id="wwind" class="wch"></span><span id="whl" class="lbl">--</span></div>
     <div class="hm">
-      <div class="left"><div class="cams" id="cams"></div><div class="rooms" id="rooms"></div></div>
+      <div class="left"><div class="cams" id="cams" tabindex="0" role="region" aria-label="Home cameras, scroll for more feeds"></div><div class="rooms" id="rooms"></div></div>
       <div class="side">
         <div class="pn" id="mini"><div class="lbl">Heat pump</div>
           <div class="mrow"><div id="mid"><span class="lbl">Indoor</span><b id="mi">--</b></div><div id="mod"><span class="lbl">Outdoor</span><b id="mo">--</b></div></div>
@@ -1642,7 +1661,7 @@ html[data-mode=light] .ldt.run{background:linear-gradient(160deg,rgba(60,150,255
 // (notification tap such as #view/driveway, #security ...), not the return from the login, and the device has not asked for reduced motion.
 window.brandLogo = function () { var L = window.DASH_LOGO, B = (window.DASH_CONFIG || {}).brand; return L && L.svg ? { svg: L.svg, lockup: !!L.lockup } : B && B.mark ? { svg: B.mark, lockup: false } : null; };   // brand-logo.js wins over brand.mark in config.js
 window.brandMark = function (s) { var g = window.brandLogo(); if (!g) return ""; return g.svg.replace(/\bid="([\w-]+)"/g, 'id="$1' + s + '"').replace(/url\(#([\w-]+)\)/g, 'url(#$1' + s + ')'); };
-window.DASH_VER = "1.8.0";   // the one place to change the version
+window.DASH_VER = "1.8.1";   // the one place to change the version
 (function () { try {
   var B = (window.DASH_CONFIG || {}).brand, el = document.getElementById("bootld"), r = document.documentElement, lp = "on";
   try { lp = localStorage.getItem("dashLogo") || "on"; } catch (e) {}   // Theme page -> "Start-up logo": on | load (no intro) | off (plain spinner, as before)
@@ -2385,7 +2404,33 @@ const camsOn = () => layout().indexOf("cams") > -1;
 function applyLayout() {
   const L = layout();
   Object.keys(HOME).forEach(k => { const el = $(HOME[k]), i = L.indexOf(k); el.style.display = i < 0 ? "none" : ""; el.style.order = i < 0 ? 0 : i; });
+  fitHomeCameras();
 }
+let homeCameraObserver = null, homeCameraFrame = 0;
+function fitHomeCameras() {
+  if (!homeCameraObserver && typeof ResizeObserver !== 'undefined') {
+    homeCameraObserver = new ResizeObserver(fitHomeCameras);
+    ['#home', '#home .hs', '#rooms', '#home .side'].forEach(selector => { const el = $(selector); if (el) homeCameraObserver.observe(el); });
+  }
+  if (homeCameraFrame) return;
+  homeCameraFrame = requestAnimationFrame(() => {
+    homeCameraFrame = 0;
+    const page = $('#home'), cams = $('#cams'), grid = $('#home .hm');
+    if (!page.classList.contains('on') || !camsOn()) return;
+    const height = el => {
+      if (!el || getComputedStyle(el).display === 'none') return 0;
+      const css = getComputedStyle(el);
+      return el.offsetHeight + (parseFloat(css.marginTop) || 0) + (parseFloat(css.marginBottom) || 0);
+    };
+    const gap = parseFloat(getComputedStyle(grid).rowGap) || 14;
+    let available = page.clientHeight - height($('#home .hs')) - height($('#rooms')) - gap - 16;
+    // Portrait tablets stack the climate/forecast row below the cameras.
+    if (innerWidth > 760 && innerWidth <= 1100) available -= height($('#home .side')) + gap;
+    if (isMobile()) available = Math.min(480, page.clientHeight * .6);
+    grid.style.setProperty('--home-camera-height', Math.max(180, Math.floor(available)) + 'px');
+  });
+}
+addEventListener('resize', fitHomeCameras);
 function cams() {   // snapshot fallback for cameras that aren't live
   if (!camPage() || (onHome() && !camsOn())) return;
   camList().forEach(c => { if (!c.live) camSnap(c); });

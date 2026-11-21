@@ -76,6 +76,12 @@ Report issues at https://github.com/NartsAi/Kinetic-Dashboard/issues. The previe
 
 # Managing missing features (1.7.0)
 
+## Home camera layout and feed selection (1.8.1)
+
+Home's camera gallery has its own vertical scroll area sized to the dashboard's available viewport. On wide screens the adjacent climate/forecast column stays compact and also scrolls independently if needed. Portrait layouts retain page scrolling for rooms and weather, while the camera list stays bounded. A camera can still open fullscreen from its scroll area.
+
+Setup → **Manage features and missing entities → Cameras shown on Home and Security** lets you choose feeds independently for each page. Discovery includes all available camera entities, including tablet feeds and alternate/recording entities; it cannot assume these are duplicates. Deselect unwanted feeds, click **Apply feature changes to editor**, then save. Regenerating area mappings retains these camera choices. For the tablet's published dashboard, publish again and reload the page after saving or updating the add-on.
+
 Open dashboard Settings as an administrator and look for **Manage features and missing entities**. Diagnostics explain absent vehicle configuration, hidden Vehicle pages and missing/unavailable entity references. Under **Visible dashboard pages**, choose navigation items. Under **Vehicle configuration**, enable Vehicle, enter its name and select exact Home Assistant sensor IDs from the searchable suggestions. A legacy prefix remains supported, but individual mappings take precedence. The original renderer expects percentage fuel, kilometre range/odometer, L/100km consumption, numeric status codes, and binary on/off warnings; adapt other units or encodings using HA template sensors. This does not install a vehicle integration or invent telemetry.
 
 Use **Common missing features** to map weather, alarm and indoor/outdoor temperature sensors. Click **Apply feature changes to editor**, review the resulting JSON, then **Save and open dashboard**. Unrelated advanced configuration is retained. For other feature mappings, the JSON editor remains available. Refresh discovery after changing integrations; this reloads the last saved configuration, so save or copy unsaved work first.
