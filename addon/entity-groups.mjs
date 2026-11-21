@@ -55,14 +55,14 @@ export function renderEntityGroups(parent, config, inventory, add) {
       const filterLabel = add('label', 'Filter ' + title, group), filter = add('input', '', filterLabel); filter.type = 'search'; filter.placeholder = 'Name or entity ID';
       const list = add('div', '', group); list.style.cssText = 'max-height:280px;overflow:auto;overscroll-behavior:contain;padding:4px';
       const rows = entries.map(entry => {
-        const label = add('label', '', list), input = add('input', '', label); input.type = 'checkbox'; input.checked = entry.checked; input.disabled = entry.locked; input.dataset.entityId = entry.id;
+        const label = add('label', '', list), input = add('input', '', label); label.style.minHeight = '44px'; input.type = 'checkbox'; input.checked = entry.checked; input.disabled = entry.locked && !entry.checked; input.dataset.entityId = entry.id;
         const state = states.get(entry.id), name = state?.attributes?.friendly_name || registry.get(entry.id)?.name || entry.id;
         const description = name + ' — ' + entry.id + (entry.locked ? ' (disabled in Home Assistant)' : state ? ' · ' + state.state : ' (not currently available)');
-        label.append(document.createTextNode(' ' + description)); input.onchange = () => { entry.checked = input.checked; count(); };
+        label.append(document.createTextNode(' ' + description)); input.onchange = () => { entry.checked = input.checked; if (entry.locked && !entry.checked) input.disabled = true; count(); };
         return { label, search: description.toLowerCase() };
       });
       filter.oninput = () => rows.forEach(row => { row.label.hidden = !row.search.includes(filter.value.toLowerCase()); });
     });
   }
-  return next => { for (const choice of choices.values()) if (!choice.locked && choice.checked !== choice.initial) updateEntityEnabled(next, choice.id, choice.checked, inventory); return next; };
+  return next => { for (const choice of choices.values()) if ((!choice.locked || !choice.checked) && choice.checked !== choice.initial) updateEntityEnabled(next, choice.id, choice.checked, inventory); return next; };
 }

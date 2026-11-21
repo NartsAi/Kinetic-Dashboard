@@ -47,7 +47,7 @@ try {
     await page.locator('#manager summary').filter({ hasText: 'Cameras shown on Home and Security' }).click();
     await page.locator('input[data-camera-page="cameras"][data-camera-id="camera.tablet"]').uncheck();
     await page.locator('#manager summary').filter({ hasText: 'Entities by type' }).click();
-    await page.locator('#manager summary').filter({ hasText: /^Climate —/ }).click();
+    await page.locator('#manager summary').filter({ hasText: /^Climate / }).click();
     await page.locator('input[data-entity-id="climate.office"]').uncheck();
     await page.locator('#apply-features').click();
     assert.equal(JSON.parse(await page.locator('#config').inputValue()).vehicle.entities.fuel_level, 'sensor.my_car_fuel');
@@ -72,7 +72,7 @@ try {
     await page.locator('#areas').waitFor({ state: 'visible' });
     assert.equal(JSON.parse(await page.locator('#config').inputValue()).brand.name, 'Our home');
     await page.locator('#manager summary').filter({ hasText: 'Entities by type' }).click();
-    await page.locator('#manager summary').filter({ hasText: /^Climate —/ }).click();
+    await page.locator('#manager summary').filter({ hasText: /^Climate / }).click();
     await page.locator('input[data-entity-id="climate.office"]').check();
     await page.locator('#apply-features').click();
     assert.ok(!JSON.parse(await page.locator('#config').inputValue()).disabledEntities.includes('climate.office'));
